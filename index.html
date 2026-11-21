@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KS-900JP 関数電卓</title>
+<meta name="description" content="数学自然表示・13の計算アプリを備えたブラウザ用関数電卓">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="device" role="application" aria-label="関数電卓">
+    <div class="brand"><b>KS-900JP</b><span>NATURAL DISPLAY · 関数電卓</span></div>
+    <div class="lcd-frame">
+      <div class="lcd" id="lcd"><div class="status" id="status"></div><div class="screen" id="screen"></div></div>
+    </div>
+    <div class="keys" id="keys"></div>
+  </div>
+
+  <aside class="side">
+    <h1>KS-900JP 関数電卓</h1>
+    <p>数学自然表示の関数電卓です。分数・√・π を含む厳密な結果を表示します。計算アプリは13種類あります。メモリーと設定はブラウザに保存されます。</p>
+    <h2>計算アプリ（HOME）</h2>
+    <ul>
+      <li>基本計算・統計計算（回帰7種）・分布計算（7種）・表計算（45行×5列）</li>
+      <li>数表作成・方程式/関数（連立4元・4次・ソルバー）・不等式（4次まで）</li>
+      <li>複素数・n進（32ビット論理演算）・行列（4×4）・ベクトル（3次元）・比例・Math Box</li>
+    </ul>
+    <h2>主な操作</h2>
+    <table>
+      <tr><td><b>SHIFT</b></td><td>次のキーの上に書かれた機能（黄色）を使う</td></tr>
+      <tr><td><b>HOME</b></td><td>計算アプリの選択（カーソル→OK）</td></tr>
+      <tr><td><b>SETTINGS</b></td><td>入力/出力・角度単位・表示桁数・分数表示・複素数表示など</td></tr>
+      <tr><td><b>CATALOG</b></td><td>関数解析（∫ d/dx Σ Π）・確率・数値計算・単位換算・科学定数47種・周期表など</td></tr>
+      <tr><td><b>TOOLS</b></td><td>アプリごとの補助機能（元に戻す、真偽判別、ソート、一括入力 など）</td></tr>
+      <tr><td><b>FORMAT</b></td><td>結果の表示形式の変換（小数・仮分数/帯分数・ENG・素因数分解・60進・循環小数・極形式）</td></tr>
+      <tr><td><b>VARIABLE</b></td><td>変数 A〜F, x, y, z の呼び出し・保存（行列/ベクトルでは MatA〜D, VctA〜D）</td></tr>
+      <tr><td><b>S⇔D</b> / SHIFT EXE(≈)</td><td>標準表示と小数表示の切り替え</td></tr>
+      <tr><td><b>▲▼</b></td><td>計算履歴（結果表示中）／分数など入力枠の移動</td></tr>
+    </table>
+    <h2>キーボード操作</h2>
+    <table>
+      <tr><td><kbd>0-9</kbd> <kbd>+ - * /</kbd> <kbd>( )</kbd> <kbd>^</kbd></td><td>数字・四則・括弧・べき乗</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>EXE</td></tr>
+      <tr><td><kbd>Backspace</kbd> / <kbd>Delete</kbd></td><td>DEL / AC</td></tr>
+      <tr><td><kbd>Esc</kbd> / <kbd>o</kbd></td><td>BACK / OK</td></tr>
+      <tr><td><kbd>Tab</kbd></td><td>SHIFT</td></tr>
+      <tr><td><kbd>s</kbd> <kbd>c</kbd> <kbd>t</kbd> <kbd>l</kbd> <kbd>g</kbd></td><td>sin cos tan ln log▪</td></tr>
+      <tr><td><kbd>r</kbd> <kbd>f</kbd> <kbd>q</kbd> <kbd>x</kbd> <kbd>n</kbd></td><td>√ 分数 x² x (−)</td></tr>
+      <tr><td><kbd>p</kbd> <kbd>a</kbd> <kbd>e</kbd> <kbd>i</kbd></td><td>π Ans ×10ˣ i</td></tr>
+      <tr><td><kbd>h</kbd> <kbd>m</kbd> <kbd>k</kbd> <kbd>T</kbd> <kbd>F</kbd> <kbd>v</kbd></td><td>HOME SETTINGS CATALOG TOOLS FORMAT VARIABLE</td></tr>
+    </table>
+    <h2>n進計算</h2>
+    <p>16進数の A〜F は関数キーの最上段（<i>x</i>、分数、√、x²、xⁿ、log）で入力します。基数は TOOLS か SHIFT + sin/cos/tan/ln（DEC/HEX/BIN/OCT）で切り替えます。</p>
+  </aside>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+<script src="js/core/exact.js"></script>
+<script src="js/core/values.js"></script>
+<script src="js/core/editor.js"></script>
+<script src="js/core/parser.js"></script>
+<script src="js/core/evaluator.js"></script>
+<script src="js/core/format.js"></script>
+<script src="js/data/constants.js"></script>
+<script src="js/data/units.js"></script>
+<script src="js/data/elements.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/apps/basic.js"></script>
+<script src="js/apps/stat.js"></script>
+<script src="js/apps/sheet.js"></script>
+<script src="js/apps/more.js"></script>
+<script src="js/apps/register.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
