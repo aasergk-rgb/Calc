@@ -501,7 +501,7 @@
     if (lo === hi) { lo -= 5; hi += 5; }
     const span = hi - lo; lo -= span * 0.35; hi += span * 0.35;
     const W = 300, H = 110, X = (v) => 10 + (v - lo) / (hi - lo) * (W - 20);
-    let s = '<svg class="fig" width="100%" viewBox="0 0 ' + W + ' ' + H + '" style="max-height:120px">';
+    let s = '<svg class="fig" width="100%" viewBox="0 0 ' + W + ' ' + H + '" style="max-height:96px">';
     const ay = 85;
     s += '<line x1="4" y1="' + ay + '" x2="' + (W - 4) + '" y2="' + ay + '" stroke="currentColor" stroke-width="1.5"/>';
     // 目盛り
@@ -523,7 +523,7 @@
   function svgCircle(thRad, half) {
     const W = 300, H = 132, R = half ? 100 : 56, cx = half ? 150 : 100, cy = half ? 116 : 64;
     const px = cx + R * Math.cos(thRad), py = cy - R * Math.sin(thRad);
-    let s = '<svg class="fig" width="100%" viewBox="0 0 ' + W + ' ' + H + '" style="max-height:132px">';
+    let s = '<svg class="fig" width="100%" viewBox="0 0 ' + W + ' ' + H + '" style="max-height:128px">';
     s += '<line x1="' + (cx - R - 10) + '" y1="' + cy + '" x2="' + (cx + R + 10) + '" y2="' + cy + '" stroke="currentColor"/>';
     s += '<line x1="' + cx + '" y1="' + (half ? cy : cy + R + 6) + '" x2="' + cx + '" y2="' + (cy - R - 6) + '" stroke="currentColor"/>';
     s += half ? '<path d="M ' + (cx - R) + ' ' + cy + ' A ' + R + ' ' + R + ' 0 0 1 ' + (cx + R) + ' ' + cy + '" fill="none" stroke="currentColor" stroke-width="1.5"/>' : '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none" stroke="currentColor" stroke-width="1.5"/>';

@@ -47,7 +47,7 @@
 
   // ===== メニュー =====
   class Menu {
-    constructor(o) { this.title = o.title || ''; this.items = o.items || []; this.sel = o.sel || 0; this.onBack = o.onBack; this.scrollTop = 0; this.rows = 6; this.hint = o.hint; this.noAC = o.noAC; this.keyHook = o.keyHook; this.after = o.after; }
+    constructor(o) { this.title = o.title || ''; this.items = o.items || []; this.sel = o.sel || 0; this.onBack = o.onBack; this.scrollTop = 0; this.rows = 5; this.hint = o.hint; this.noAC = o.noAC; this.keyHook = o.keyHook; this.after = o.after; }
     render() {
       const n = this.items.length, rows = this.rows;
       if (this.sel < this.scrollTop) this.scrollTop = this.sel;
@@ -60,7 +60,7 @@
         const chk = typeof it.checked === 'function' ? it.checked() : it.checked;
         h += '<div class="it' + (i === this.sel ? ' sel' : '') + '"><span' + (chk ? ' class="chk"' : '') + '>' + (it.html ? lab : esc(lab)) + '</span>' + (right !== undefined ? '<span class="r">' + (it.rhtml ? right : esc(right)) + (it.sub ? ' ▶' : '') + '</span>' : it.sub ? '<span class="r">▶</span>' : '') + '</div>';
       }
-      if (n > rows) { const hgt = Math.max(10, 126 * rows / n); h += '<div class="scroll" style="top:' + (this.scrollTop / n * 126) + 'px;height:' + hgt + 'px"></div>'; }
+      if (n > rows) { const H = rows * 21; const hgt = Math.max(10, H * rows / n); h += '<div class="scroll" style="top:' + (this.scrollTop / n * H) + 'px;height:' + hgt + 'px"></div>'; }
       h += '</div>' + (this.hint ? '<div class="hint">' + esc(this.hint) + '</div>' : '') + '</div>';
       return h;
     }
@@ -457,7 +457,7 @@
       this.title = o.title; this.fields = o.fields.map((f) => Object.assign({}, f)); this.sel = 0; this.onSubmit = o.onSubmit; this.onBack = o.onBack;
       this.btn = o.btn; // 実行ボタンの文言
       for (const f of this.fields) { f.ed = new C.Editor(f.math ? C.edMode() : 'line'); if (f.value !== undefined) f.ed.setTokens(C.valueToTokens(f.value)); else if (f.tokens) f.ed.setTokens(f.tokens); f.editing = false; }
-      this.rows = o.rows || 5; this.scrollTop = 0;
+      this.rows = o.rows || 4; this.scrollTop = 0;
     }
     count() { return this.fields.length + (this.btn ? 1 : 0); }
     render() {

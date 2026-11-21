@@ -4,25 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>KS-900JP 関数電卓</title>
-<meta name="description" content="数学自然表示・13の計算アプリを備えたブラウザ用関数電卓">
+<meta name="description" content="数学自然表示と13の計算アプリを備えた関数電卓">
+<meta name="theme-color" content="#0d0e11">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=DotGothic16&family=Noto+Sans+JP:wght@400;500;700&family=STIX+Two+Text:ital@1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="wrap">
-  <div class="device" role="application" aria-label="関数電卓">
-    <div class="brand"><b>KS-900JP</b><span>関数電卓</span></div>
-    <div class="lcd-frame">
-      <div class="lcd" id="lcd"><div class="status" id="status"></div><div class="screen" id="screen"></div></div>
+<main class="stage">
+  <div class="fit" id="fit">
+    <div class="device" id="device" role="application" aria-label="関数電卓 KS-900JP">
+      <div class="lcd-frame">
+        <div class="lcd" id="lcd"><div class="status" id="status"></div><div class="screen" id="screen"></div></div>
+        <div class="frame-foot"><b>KS-900JP</b><button type="button" class="help" id="helpBtn" aria-label="使い方を表示">使い方</button></div>
+      </div>
+      <div class="keys" id="keys"></div>
     </div>
-    <div class="keys" id="keys"></div>
   </div>
+</main>
 
-  <aside class="side">
-    <h1>KS-900JP 関数電卓</h1>
-    <p>数学自然表示の関数電卓です。分数・√・π を含む厳密な結果を表示します。計算アプリは13種類あります。メモリーと設定はブラウザに保存されます。</p>
+<div class="sheet" id="help" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="panel">
+    <header><h1 id="helpTitle">KS-900JP の使い方</h1><button type="button" class="close" aria-label="閉じる">✕</button></header>
+    <div class="body">
+      <p>数学自然表示の関数電卓です。分数・√・π を含む厳密な結果を表示します。メモリーと設定はこの端末のブラウザに保存されます。</p>
     <h2>計算アプリ（HOME）</h2>
     <ul>
       <li>基本計算・統計計算（回帰7種）・分布計算（7種）・表計算（45行×5列）</li>
@@ -30,7 +36,7 @@
       <li>複素数・n進（32ビット論理演算）・行列（4×4）・ベクトル（3次元）・比例・Math Box</li>
     </ul>
     <h2>主な操作</h2>
-    <table>
+    <div class="tbl"><table>
       <tr><td><b>SHIFT</b>（金色）</td><td>次に押すキーを、そのキーの左上に書かれた機能に切り替える</td></tr>
       <tr><td><b>HOME</b> / <b>SETTINGS</b></td><td>計算アプリの選択 / 各種設定（入力/出力・角度単位・表示桁数 など）</td></tr>
       <tr><td><b>CATALOG</b> / <b>TOOLS</b></td><td>関数・定数・単位換算・周期表 / アプリごとの補助機能</td></tr>
@@ -38,9 +44,9 @@
       <tr><td><b>FORMAT</b></td><td>結果の表示形式を変換。SHIFT＋FORMAT（↻）で標準⇔小数</td></tr>
       <tr><td><b>︽ ︾</b></td><td>メニューのページ送り／計算履歴</td></tr>
       <tr><td>SHIFT＋各キー</td><td>x→f(x)　°′″→QR　log→ln　■²→logₐb　■□→■⁻¹　(→=　)→,　Ans→PreAns　7→π　8→∠　9→i　×→e　÷→e^■　+→÷R　−→(−)</td></tr>
-    </table>
+    </table></div>
     <h2>キーボード操作</h2>
-    <table>
+    <div class="tbl"><table>
       <tr><td><kbd>0-9</kbd> <kbd>+ - * /</kbd> <kbd>( )</kbd> <kbd>^</kbd></td><td>数字・四則・括弧・べき乗</td></tr>
       <tr><td><kbd>Enter</kbd> / <kbd>Backspace</kbd> / <kbd>Delete</kbd></td><td>= / ⌫ / AC</td></tr>
       <tr><td><kbd>Esc</kbd> / <kbd>o</kbd> / <kbd>Tab</kbd></td><td>BACK / OK / SHIFT</td></tr>
@@ -48,10 +54,11 @@
       <tr><td><kbd>r</kbd> <kbd>f</kbd> <kbd>q</kbd> <kbd>x</kbd> <kbd>n</kbd></td><td>√ 分数 x² x (−)</td></tr>
       <tr><td><kbd>p</kbd> <kbd>a</kbd> <kbd>e</kbd> <kbd>i</kbd></td><td>π Ans ×10ˣ i</td></tr>
       <tr><td><kbd>h</kbd> <kbd>m</kbd> <kbd>k</kbd> <kbd>T</kbd> <kbd>F</kbd> <kbd>v</kbd></td><td>HOME SETTINGS CATALOG TOOLS FORMAT VARIABLE</td></tr>
-    </table>
+    </table></div>
     <h2>n進計算</h2>
     <p>16進数の A〜F は SHIFT＋4,5,6,1,2,3 で入力します。基数は TOOLS で切り替えます。</p>
-  </aside>
+    </div>
+  </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
 <script src="js/core/exact.js"></script>

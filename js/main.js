@@ -5,29 +5,38 @@
 
   // ===== キー配列（実機の配置に準拠） =====
   // [物理キーID, キートップ, SHIFT表示, クラス]
+  const SV = (vb, inner, w) => '<svg viewBox="' + vb + '" width="' + (w || 20) + '" height="' + (w || 20) + '" aria-hidden="true">' + inner + '</svg>';
+  const STROKE = 'fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"';
   const I = {
-    home: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 11 L12 4 L20 11 V20 H4 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>',
-    back: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 6 L4 10 L8 14 M4 10 H14 A5 5 0 0 1 14 20 H9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    settings: '<svg viewBox="0 0 24 24" width="22" height="22"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6H20M4 12H20M4 18H20"/></g><g fill="currentColor"><rect x="7" y="3.5" width="3.5" height="5" rx="1"/><rect x="13.5" y="9.5" width="3.5" height="5" rx="1"/><rect x="6" y="15.5" width="3.5" height="5" rx="1"/></g></svg>',
-    variable: '<span style="font-size:13px;letter-spacing:-1px">⇄</span><i style="font-family:serif;font-size:19px;border:1.5px solid currentColor;border-radius:3px;padding:0 2px;line-height:17px;margin-left:1px">x</i>',
-    catalog: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 6 C9 4 6 4 3 5 V19 C6 18 9 18 12 20 C15 18 18 18 21 19 V5 C18 4 15 4 12 6 Z M12 6 V20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
-    tools: '<span style="letter-spacing:1px;font-size:15px">∘∘∘</span>',
-    frac: '<svg viewBox="0 0 24 24" width="22" height="22"><rect x="7" y="3" width="10" height="7" rx="1" fill="currentColor"/><rect x="4" y="11.2" width="16" height="1.8" fill="currentColor"/><rect x="7" y="14" width="10" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-    sqrt: '<span style="font-size:20px">√</span><span class="bx1"></span>',
-    pow: '<span class="bx1 big"></span><span class="bx2 sup"></span>',
-    sq: '<span class="bx1 big"></span><b class="sup" style="font-size:13px">2</b>',
-    del: '<svg viewBox="0 0 28 20" width="28" height="20"><path d="M9 2 H26 V18 H9 L2 10 Z" fill="currentColor"/><path d="M13 6 L21 14 M21 6 L13 14" stroke="#3b3c3f" stroke-width="2.4" stroke-linecap="round"/></svg>',
-    format: '<span style="font-size:11px;font-weight:700;letter-spacing:-.5px;position:relative">FORMAT<span style="position:absolute;left:-2px;right:-2px;top:-9px;font-size:10px;text-align:center">⌒</span><span style="position:absolute;left:-2px;right:-2px;bottom:-11px;font-size:10px;text-align:center;transform:rotate(180deg)">⌒</span></span>',
-    shift: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 4 L20 12 H15.5 V20 H8.5 V12 H4 Z" fill="#232323"/></svg>',
+    home: SV('0 0 24 24', '<path d="M4.5 11.2 12 4.8l7.5 6.4V19.5h-15z" ' + STROKE + ' stroke-width="2.1"/>'),
+    back: SV('0 0 24 24', '<path d="M8.5 5.5 4.5 9.5l4 4M4.8 9.5H14a5 5 0 0 1 0 10H9" ' + STROKE + ' stroke-width="2.1"/>'),
+    settings: SV('0 0 24 24', '<path d="M4 6.5h16M4 12h16M4 17.5h16" ' + STROKE + ' stroke-width="1.9"/><rect x="7.3" y="4" width="3.4" height="5" rx="1.2" fill="currentColor"/><rect x="13.6" y="9.5" width="3.4" height="5" rx="1.2" fill="currentColor"/><rect x="6.2" y="15" width="3.4" height="5" rx="1.2" fill="currentColor"/>'),
+    variable: SV('0 0 34 24', '<path d="M2.5 8.5h9M8.5 5.5l3 3-3 3M11.5 15.5h-9M5.5 12.5l-3 3 3 3" ' + STROKE + ' stroke-width="1.6"/><rect x="14.5" y="3" width="17" height="18" rx="2.5" ' + STROKE + ' stroke-width="1.6"/><text x="23" y="17.2" text-anchor="middle" font-family="STIX Two Text, serif" font-style="italic" font-size="15" fill="currentColor">x</text>', 30),
+    catalog: SV('0 0 24 24', '<path d="M12 6.4C9.3 4.6 6.4 4.4 3.5 5.2v13.4c2.9-.8 5.8-.6 8.5 1.2 2.7-1.8 5.6-2 8.5-1.2V5.2c-2.9-.8-5.8-.6-8.5 1.2zM12 6.4v13.2" ' + STROKE + ' stroke-width="1.8"/>', 22),
+    tools: SV('0 0 30 10', '<circle cx="5" cy="5" r="3" ' + STROKE + ' stroke-width="1.7"/><circle cx="15" cy="5" r="3" ' + STROKE + ' stroke-width="1.7"/><circle cx="25" cy="5" r="3" ' + STROKE + ' stroke-width="1.7"/>', 26),
+    dms: '<span style="font:600 19px/1 var(--f-ui);letter-spacing:1px;position:relative;top:-3px">°′″</span>',
+    frac: SV('0 0 24 24', '<rect x="7" y="3" width="10" height="7.2" rx="1.2" fill="currentColor"/><rect x="4.5" y="11.3" width="15" height="1.7" rx=".8" fill="currentColor"/><rect x="7.8" y="14.6" width="8.4" height="6" rx="1" ' + STROKE + ' stroke-width="1.6"/>', 22),
+    sqrt: SV('0 0 28 24', '<path d="M2.5 13.5h3l3.5 7L14 3.5h12" ' + STROKE + ' stroke-width="1.8"/><rect x="16" y="7.5" width="8.5" height="11" rx="1.2" fill="currentColor"/>', 26),
+    pow: SV('0 0 24 24', '<rect x="3" y="8" width="12" height="13" rx="1.5" fill="currentColor"/><rect x="16.5" y="3" width="5.5" height="6.5" rx="1" ' + STROKE + ' stroke-width="1.5"/>', 22),
+    sq: SV('0 0 24 24', '<rect x="3" y="8" width="12" height="13" rx="1.5" fill="currentColor"/><text x="19.3" y="10" text-anchor="middle" font-family="Barlow, sans-serif" font-weight="700" font-size="10" fill="currentColor">2</text>', 22),
+    del: SV('0 0 30 20', '<path d="M10 2.5h16.5a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H10L2.5 10z" fill="currentColor"/><path d="M14 6.5l7 7M21 6.5l-7 7" stroke="#3a3b40" stroke-width="2.4" stroke-linecap="round"/>', 28),
+    format: '<span class="fmt">' + SV('0 0 44 44', '<path d="M9 15a15 15 0 0 1 26 0M35 29a15 15 0 0 1-26 0" ' + STROKE + ' stroke-width="2"/><path d="M35 15l-.5-5M35 15l-4.8-1.5M9 29l.5 5M9 29l4.8 1.5" ' + STROKE + ' stroke-width="2"/>', 44) + '<b>FORMAT</b></span>',
+    shift: SV('0 0 24 24', '<path d="M12 4.2 20 12.4h-4.5v7.4h-7v-7.4H4z" fill="#2a271e"/>', 22),
+    up: SV('0 0 16 16', '<path d="M3.5 10.5 8 6l4.5 4.5" ' + STROKE + ' stroke-width="2"/>'),
+    down: SV('0 0 16 16', '<path d="M3.5 5.5 8 10l4.5-4.5" ' + STROKE + ' stroke-width="2"/>'),
+    left: SV('0 0 16 16', '<path d="M10.5 3.5 6 8l4.5 4.5" ' + STROKE + ' stroke-width="2"/>'),
+    right: SV('0 0 16 16', '<path d="M5.5 3.5 10 8l-4.5 4.5" ' + STROKE + ' stroke-width="2"/>'),
+    pgup: SV('0 0 16 16', '<path d="M3 8.5 8 3.5l5 5M3 13 8 8l5 5" ' + STROKE + ' stroke-width="1.9"/>'),
+    pgdn: SV('0 0 16 16', '<path d="M3 3 8 8l5-5M3 7.5 8 12.5l5-5" ' + STROKE + ' stroke-width="1.9"/>'),
   };
-  const ROW_A = [['shift', I.shift, '', 'shift'], ['x', '<i class="serif">x</i>', '<i>f</i>(<i>x</i>)'], ['variable', I.variable, '', '', 'VARIABLE'], null, ['catalog', I.catalog, '', '', '<span style="color:var(--sl)">☰</span> CATALOG'], ['tools', I.tools, '', '', 'TOOLS']];
-  const ROW_B = [['dms', '°′″', 'QR'], ['frac', I.frac, '▪▭/▭'], ['sqrt', I.sqrt, '<sup>▪</sup>√▫'], ['pow', I.pow, '▪<sup>−1</sup>'], ['sq', I.sq, 'log<sub>▪</sub>▫'], ['log', 'log', 'ln']];
-  const ROW_C = [['ans', 'Ans', 'Pre<br>Ans', 'tight'], ['sin', 'sin', 'sin⁻¹'], ['cos', 'cos', 'cos⁻¹'], ['tan', 'tan', 'tan⁻¹'], ['lp', '(', '='], ['rp', ')', ',']];
+  const ROW_A = [['shift', I.shift, '', 'shift'], ['x', '<i>x</i>', '<i>f</i>(<i>x</i>)'], ['variable', I.variable, '', '', 'VARIABLE'], null, ['catalog', I.catalog, '', '', '<span class="g">☰</span> CATALOG'], ['tools', I.tools, '', '', 'TOOLS']];
+  const ROW_B = [['dms', I.dms, 'QR'], ['frac', I.frac, '▪<sup>▭</sup>⁄<sub>▭</sub>'], ['sqrt', I.sqrt, '<sup>▪</sup>√▫'], ['pow', I.pow, '▪<sup>−1</sup>'], ['sq', I.sq, 'log<sub>▪</sub>▫'], ['log', 'log', 'ln', 'word']];
+  const ROW_C = [['ans', 'Ans', 'PreAns', 'word'], ['sin', 'sin', 'sin<sup>−1</sup>', 'word'], ['cos', 'cos', 'cos<sup>−1</sup>', 'word'], ['tan', 'tan', 'tan<sup>−1</sup>', 'word'], ['lp', '(', '='], ['rp', ')', ',']];
   const NUM_ROWS = [
     [['7', '7', '<i>π</i>'], ['8', '8', '∠'], ['9', '9', '<i>i</i>'], ['del', I.del, 'INS'], ['ac', 'AC', '<span class="offpill">OFF</span>']],
-    [['4', '4', 'A'], ['5', '5', 'B'], ['6', '6', 'C'], ['mul', '×', '<i>e</i>'], ['div', '÷', '<i>e</i><sup>▪</sup>']],
-    [['1', '1', 'D'], ['2', '2', 'E'], ['3', '3', 'F'], ['add', '+', '÷R'], ['sub', '−', '(−)']],
-    [['0', '0', '<i>x</i>'], ['.', '.', '<i>y</i>'], ['exp', '×10<sup>▪</sup>', '<i>z</i>'], ['format', I.format, '↻'], ['exe', '=', 'S+']],
+    [['4', '4', 'A'], ['5', '5', 'B'], ['6', '6', 'C'], ['mul', '×', '<i>e</i>', 'op'], ['div', '÷', '<i>e</i><sup>▪</sup>', 'op']],
+    [['1', '1', 'D'], ['2', '2', 'E'], ['3', '3', 'F'], ['add', '+', '÷R', 'op'], ['sub', '−', '(−)', 'op']],
+    [['0', '0', '<i>x</i>'], ['.', '.', '<i>y</i>'], ['exp', '×10<sup>▪</sup>', '<i>z</i>'], ['format', I.format, '↻'], ['exe', '=', 'S+', 'op']],
   ];
   // 物理キー（SHIFTなし／あり）→ 論理キー
   const PHYS = { log: 'log' };
@@ -40,22 +49,57 @@
   };
   C.translateKey = (k, shift) => (shift ? (PHYS_S[k] || 'S-' + k) : (PHYS[k] || k));
 
-  function keyHtml(def, cls) {
+  function keyHtml(def) {
     if (!def) return '<div class="kw"></div>';
     const [id, lbl, sl, kcls, top] = def;
-    return '<div class="kw' + (cls ? ' ' + cls : '') + '">' + (top ? '<span class="tl">' + top + '</span>' : '<span class="sl">' + (sl ? sl + '<span class="hook"></span>' : '') + '</span>') + '<button class="k ' + (kcls || '') + '" data-k="' + id + '" aria-label="' + id + '">' + lbl + '</button>' + (top && sl ? '<span class="sl2">' + sl + '</span>' : '') + '</div>';
+    const label = top ? '<span class="tl">' + top + '</span>' : '<span class="sl">' + (sl ? sl + '<span class="hook"></span>' : '') + '</span>';
+    return '<div class="kw">' + label + '<button type="button" class="k ' + (kcls || '') + '" data-k="' + id + '" aria-label="' + id + '">' + lbl + '</button></div>';
   }
+  const rk = (id, lbl, cls, aria) => '<button type="button" class="k round ' + (cls || '') + '" data-k="' + id + '" aria-label="' + aria + '">' + lbl + '</button>';
   function buildKeys() {
     const top = '<div class="top">' +
-      '<div class="tc"><span class="tl">ON</span><button class="k round on" data-k="on" aria-label="ON"><span class="knob"></span></button><span class="tl">SETTINGS</span><button class="k round" data-k="settings" aria-label="SETTINGS">' + I.settings + '</button></div>' +
-      '<div class="tc"><span class="tl">HOME</span><button class="k round" data-k="home" aria-label="HOME">' + I.home + '</button><span class="tl">&nbsp;</span><button class="k round" data-k="back" aria-label="BACK">' + I.back + '</button></div>' +
-      '<div class="pad"><button class="up" data-k="up" aria-label="up">︿</button><button class="left" data-k="left" aria-label="left">〈</button><button class="ok" data-k="ok">OK</button><button class="right" data-k="right" aria-label="right">〉</button><button class="down" data-k="down" aria-label="down">﹀</button></div>' +
-      '<div class="pg"><button data-k="pgup" aria-label="page up">︽</button><button data-k="pgdn" aria-label="page down">︾</button></div>' +
+      '<div class="tc"><span class="tl">ON</span>' + rk('on', '<span class="knob"></span>', 'on', 'ON') + '<span class="tl">SETTINGS</span>' + rk('settings', I.settings, '', 'SETTINGS') + '</div>' +
+      '<div class="tc"><span class="tl">HOME</span>' + rk('home', I.home, '', 'HOME') + '<span class="tl"></span>' + rk('back', I.back, '', 'BACK') + '</div>' +
+      '<div class="pad"><button type="button" class="up" data-k="up" aria-label="上">' + I.up + '</button><button type="button" class="left" data-k="left" aria-label="左">' + I.left + '</button><button type="button" class="ok" data-k="ok">OK</button><button type="button" class="right" data-k="right" aria-label="右">' + I.right + '</button><button type="button" class="down" data-k="down" aria-label="下">' + I.down + '</button></div>' +
+      '<div class="pg"><button type="button" data-k="pgup" aria-label="前のページ">' + I.pgup + '</button><button type="button" data-k="pgdn" aria-label="次のページ">' + I.pgdn + '</button></div>' +
       '</div>';
-    const row = (r, c) => '<div class="' + c + '">' + r.map((k) => keyHtml(k)).join('') + '</div>';
+    const row = (r) => '<div class="fn">' + r.map((k) => keyHtml(k)).join('') + '</div>';
     let nm = '<div class="num">'; for (const r of NUM_ROWS) for (const k of r) nm += keyHtml(k); nm += '</div>';
-    document.getElementById('keys').innerHTML = top + row(ROW_A, 'fn rowa') + row(ROW_B, 'fn') + row(ROW_C, 'fn') + nm;
+    document.getElementById('keys').innerHTML = top + row(ROW_A) + row(ROW_B) + row(ROW_C) + nm;
   }
+
+  // ===== 画面に合わせて本体を拡大縮小 =====
+  function fit() {
+    const dev = document.getElementById('device'), box = document.getElementById('fit');
+    if (!dev || !box) return;
+    const vv = window.visualViewport;
+    const vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
+    const full = vw < 560 && vh / vw > 1.35;   // スマホ縦持ち
+    document.body.classList.toggle('full', full);
+    dev.style.height = ''; dev.style.setProperty('--lcd-h', '150px');
+    const w = dev.offsetWidth, natural = dev.offsetHeight;
+    let sc;
+    if (full) {
+      sc = vw / w;
+      const designH = vh / sc;
+      if (designH >= natural) {
+        const extra = designH - natural;
+        dev.style.setProperty('--lcd-h', Math.round(150 + Math.min(46, extra * 0.4)) + 'px');
+        dev.style.height = designH + 'px';
+      } else sc = vh / natural;
+      box.style.width = vw + 'px';
+      dev.style.left = Math.max(0, (vw - w * sc) / 2) + 'px';
+    } else {
+      const cs = getComputedStyle(box.parentElement);
+      const availW = vw - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const availH = vh - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      sc = Math.max(0.5, Math.min(availW / w, availH / natural, 1.45));
+      box.style.width = w * sc + 'px'; dev.style.left = '0px';
+    }
+    dev.style.transform = 'scale(' + sc + ')';
+    box.style.height = dev.offsetHeight * sc + 'px';
+  }
+  C.fit = fit;
 
   // ===== アプリ =====
   C.APPS = C.APPS || [];
@@ -138,7 +182,7 @@
         { label: '変数メモリー', action: () => C.confirm('変数メモリー', '変数メモリーをクリアしますか？', () => { for (const v in G.vars) G.vars[v] = C.E.Q(0); done('変数メモリーをクリアしました'); }) },
         { label: 'すべてを初期化', action: () => C.confirm('すべてを初期化', 'すべてを初期化しますか？', () => { resetSettings(true); resetData(); for (const v in G.vars) G.vars[v] = C.E.Q(0); G.ans = C.E.Q(0); G.preAns = C.E.Q(0); G.fdef = { f: [], g: [] }; G.mats = {}; G.vecs = {}; done('初期化しました'); }) },
       ] },
-      { label: 'はじめに', action: () => C.push(new C.Msg({ title: 'KS-900JP', text: 'HOMEで計算アプリを選び、OKで起動します。SETTINGSで各種設定を変更できます。', hint: '[OK] 閉じる' })) },
+      { label: '使い方', action: () => { C.popAll(); document.getElementById('helpBtn').click(); } },
     ]);
   }
   function done(msg) { C.save(); C.popAll(); C.switchApp(G.app.id); C.push(new C.Msg({ title: msg, hint: '[OK]' })); }
@@ -169,6 +213,7 @@
     try { body = top ? top.render() : G.app.render(); } catch (e) { console.error(e); body = '<div class="msg">表示エラー</div>'; }
     document.getElementById('screen').innerHTML = body;
     document.getElementById('status').innerHTML = statusHtml(top);
+    const sk = document.querySelector('.k.shift'); if (sk) sk.classList.toggle('on-shift', !!G.shift);
     // カーソルを表示範囲内に
     const cur = lcd.querySelector('.cur');
     if (cur) {
@@ -242,7 +287,7 @@
     let lastTouch = 0;
     const handler = (ev) => {
       const b = ev.target.closest('[data-k]'); if (!b) return;
-      if (ev.type === 'touchstart') { lastTouch = Date.now(); ev.preventDefault(); b.classList.add('press'); setTimeout(() => b.classList.remove('press'), 90); }
+      if (ev.type === 'touchstart') { lastTouch = Date.now(); ev.preventDefault(); b.classList.add('press'); setTimeout(() => b.classList.remove('press'), 110); try { if (navigator.vibrate) navigator.vibrate(7); } catch (e) { /* */ } }
       else if (Date.now() - lastTouch < 600) return;
       C.press(b.dataset.k);
     };
@@ -254,7 +299,18 @@
       s: 'sin', c: 'cos', t: 'tan', l: 'ln', L: 'log', g: 'logb', S: 'shift', r: 'sqrt', x: 'x', e: 'exp', p: 'S-exp', a: 'ans', f: 'frac', i: 'S-dms', h: 'home', o: 'ok',
       v: 'variable', k: 'catalog', T: 'tools', F: 'format', m: 'settings', n: 'neg', q: 'sq', Tab: 'shift', b: 'back', d: 'dms', u: 'fx', E: 'S-exe',
     };
+    // 使い方シート
+    const sheet = document.getElementById('help');
+    const openHelp = () => { sheet.hidden = false; sheet.querySelector('.close').focus(); };
+    const closeHelp = () => { sheet.hidden = true; };
+    document.getElementById('helpBtn').addEventListener('click', openHelp);
+    sheet.querySelector('.close').addEventListener('click', closeHelp);
+    sheet.addEventListener('click', (ev) => { if (ev.target === sheet) closeHelp(); });
+    window.addEventListener('resize', fit);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     document.addEventListener('keydown', (ev) => {
+      if (!sheet.hidden) { if (ev.key === 'Escape') { ev.preventDefault(); closeHelp(); } return; }
       if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
       let k = KB[ev.key];
       if (/^[0-9]$/.test(ev.key)) k = ev.key;
@@ -267,7 +323,7 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     try { const th = localStorage.getItem('kscalc.theme'); if (th && th !== 'auto') document.documentElement.dataset.theme = th; } catch (e) { /* */ }
-    buildKeys(); bindUI();
+    buildKeys(); bindUI(); fit();
     const last = C.load();
     for (const a of C.APPS) if (a.init) a.init();
     G.app = appById(last) || C.APPS[0];

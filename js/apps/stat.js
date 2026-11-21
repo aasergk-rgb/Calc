@@ -144,7 +144,7 @@
 
   function resultList(title, rows, opts) {
     // rows: [[label, () => value]]
-    let sel = 0, top = 0; const vis = 6;
+    let sel = 0, top = 0; const vis = 5;
     const ov = {
       render() {
         if (sel < top) top = sel; if (sel >= top + vis) top = sel - vis + 1;
@@ -169,7 +169,7 @@
 
   // ===== 統計アプリ =====
   const stat = {
-    id: 'stat', name: '統計計算', short: '統計', icon: '<span style="font-size:14px"><i>x̄</i> σ</span>',
+    id: 'stat', name: '統計計算', short: '統計', icon: '<span style="font-size:14px"><i style="text-decoration:overline">x</i> σ</span>',
     init() {
       const st = G.appState.stat;
       this.two = st ? st.two : false; this.freq = st ? st.freq : false; this.regType = st ? st.reg : 'lin';
@@ -393,7 +393,7 @@
     openList() {
       const self = this; this.view = 'list'; this.listRes = null;
       this.grid = new C.CellGrid({
-        rows: () => self.list.length, cols: 2, colLabel: (c) => (c ? 'P' : 'x'), visRows: 5, visCols: 2, growable: true, advance: 'down', maxRows: 46, padRows: true,
+        rows: () => self.list.length, cols: 2, colLabel: (c) => (c ? 'P' : 'x'), visRows: 4, visCols: 2, growable: true, advance: 'down', maxRows: 46, padRows: true,
         get: (r, c) => (c === 0 ? self.list[r] : self.listRes ? (typeof self.listRes[r] === 'number' ? self.listRes[r] : undefined) : undefined),
         cellText(r, c) { if (c === 1 && self.listRes && self.listRes[r] === 'ERROR') return 'ERROR'; const v = this.get(r, c); return v === undefined ? '' : C.shortText(v, G.s, 9); },
         set: (r, c, v) => { if (c !== 0) return; if (r >= 45) { C.showError(new C.CalcError('Memory')); return; } if (r >= self.list.length) self.list.push(v); else self.list[r] = v; self.listRes = null; self.persist(); },
