@@ -67,5 +67,22 @@ if (C.solvePoly) {
   assert.strictEqual(roots([1, 0, 1]), '𝑖 | - 𝑖');
   pass += 3;
 }
+
+// ソルブ機能: 初期値によらず解を求める（極は解としない）
+{
+  const S2 = C.solveNumeric;
+  const near = (r, want) => r.ok && Math.abs(r.x - want) < 1e-9 * Math.max(1, Math.abs(want));
+  const f1 = (x) => { if (x === 0) throw new Error('div0'); return 0.5 - 2 / x; }; // 1/2 = 2/x
+  for (const x0 of [-1000, -5, -1, 0, 1, 4, 10, 1e6]) { assert.ok(near(S2(f1, x0), 4), '1/2=2/x x0=' + x0 + ' -> ' + S2(f1, x0).x); pass++; }
+  assert.ok(near(S2((x) => x * x - 2, -3), -Math.SQRT2)); pass++;          // 近い方の解
+  assert.ok(near(S2((x) => x * x - 2, 5), Math.SQRT2)); pass++;
+  assert.ok(!S2((x) => x * x + 1, 0).ok); pass++;                           // 実数解なし
+  assert.ok(!S2((x) => 1 / x, 1).ok); pass++;                               // 極だけで解なし
+  assert.ok(near(S2((x) => Math.exp(x) - 5, -20), Math.log(5))); pass++;
+  assert.ok(near(S2((x) => Math.sin(x) - 0.5, 0), Math.asin(0.5))); pass++;
+  assert.ok(near(S2((x) => { if (x < 0) throw new Error('dom'); return Math.sqrt(x) - 3; }, -4), 9)); pass++;
+  console.log('solver ok');
+}
+
 console.log(pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

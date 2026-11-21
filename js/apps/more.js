@@ -102,6 +102,69 @@
   C.gaussSolve = gaussSolve;
   C.hornerEval = horner;
 
+  // ===== ソルブ機能の数値解法 =====
+  // ニュートン法で収束しない（発散・微分0・定義域外）ときは、初期値から左右に範囲を広げて
+  // 符号変化を探し二分法で絞り込む。極（漸近線）での符号変化は解として扱わない。
+  function solveNumeric(f, x0) {
+    const F = (x) => { try { const v = f(x); return Number.isFinite(v) ? v : NaN; } catch (e) { return NaN; } };
+    const isRoot = (x, v) => Number.isFinite(v) && Math.abs(v) <= 1e-9 * Math.max(1, Math.abs(x));
+    const newton = (x) => {
+      for (let it = 0; it < 80; it++) {
+        const fx = F(x); if (!Number.isFinite(fx)) return null;
+        if (fx === 0) return x;
+        const h = Math.max(1e-7, Math.abs(x) * 1e-7);
+        const d = (F(x + h) - F(x - h)) / (2 * h);
+        if (!Number.isFinite(d) || d === 0) return null;
+        let nx = x - fx / d, lam = 1;
+        while (lam > 1e-6 && !(Math.abs(F(nx)) <= Math.abs(fx))) { lam /= 2; nx = x - lam * fx / d; }
+        if (!Number.isFinite(nx) || Math.abs(nx) > 1e100) return null;
+        if (Math.abs(nx - x) <= 1e-15 * Math.max(1, Math.abs(x))) return nx;
+        x = nx;
+      }
+      return null; // 収束しない（発散など）
+    };
+    const bisect = (a, fa, b) => {
+      for (let i = 0; i < 200; i++) {
+        let m = (a + b) / 2, fm = F(m);
+        if (!Number.isFinite(fm)) { m = a + (b - a) * 0.4999; fm = F(m); if (!Number.isFinite(fm)) return null; }
+        if (fm === 0) return m;
+        if ((fm < 0) === (fa < 0)) { a = m; fa = fm; } else b = m;
+        if (Math.abs(b - a) <= 1e-15 * Math.max(1, Math.abs(a))) break;
+      }
+      return (a + b) / 2;
+    };
+    // 1) 初期値（定義域外なら少しずらす）からニュートン法
+    let start = x0;
+    if (!Number.isFinite(F(start))) { const d = Math.max(1e-6, Math.abs(x0) * 1e-6); start = Number.isFinite(F(x0 + d)) ? x0 + d : Number.isFinite(F(x0 - d)) ? x0 - d : x0; }
+    let r = Number.isFinite(F(start)) ? newton(start) : null;
+    if (r !== null && isRoot(r, F(r))) return { x: r, ok: true };
+    // 2) 初期値の近くから順に符号変化を探す
+    const s0 = Math.max(1e-3, Math.abs(x0) * 1e-3);
+    const sides = [{ dir: 1, px: x0, pv: F(x0) }, { dir: -1, px: x0, pv: F(x0) }];
+    for (let k = 0; k <= 110; k++) {
+      const dist = s0 * Math.pow(1.5, k);
+      for (const sd of sides) {
+        const end = x0 + sd.dir * dist, from = sd.last === undefined ? x0 : sd.last;
+        sd.last = end;
+        // 広げた区間の内部も等間隔に調べて、符号変化を見落とさないようにする
+        for (let j = 1; j <= 24; j++) {
+          const x = from + (end - from) * j / 24, v = F(x);
+          if (!Number.isFinite(v)) continue;
+          if (v === 0) return { x, ok: true };
+          if (Number.isFinite(sd.pv) && (v < 0) !== (sd.pv < 0)) {
+            const b = bisect(sd.px, sd.pv, x);
+            if (b !== null) { const p = newton(b); const c = p !== null && isRoot(p, F(p)) ? p : b; if (isRoot(c, F(c))) return { x: c, ok: true }; }
+          }
+          sd.px = x; sd.pv = v;
+        }
+        // 区間の端からもニュートン法を試す（極の近くの狭い範囲にある解のため）
+        if (Number.isFinite(F(end))) { const p = newton(end); if (p !== null && isRoot(p, F(p))) return { x: p, ok: true }; }
+      }
+    }
+    return { x: NaN, ok: false };
+  }
+  C.solveNumeric = solveNumeric;
+
   function ineqSolve(cs, op) {
     const { reals } = solvePoly(cs);
     const rs = reals.slice().sort((a, b) => num(a) - num(b));
@@ -329,32 +392,13 @@
           return num(V.realOnly(C.evaluate(ast, C.mkCtx('calc'))));
         } finally { G.vars[t] = old; }
       };
-      let x = num(G.vars[t] || Q(0)), ok = false;
-      try {
-        for (let it = 0; it < 120; it++) {
-          const fx = f(x);
-          if (Math.abs(fx) < 1e-15) { ok = true; break; }
-          const h = Math.max(1e-8, Math.abs(x) * 1e-8);
-          const d = (f(x + h) - f(x - h)) / (2 * h);
-          if (!Number.isFinite(d) || d === 0) { x += 0.5 + Math.abs(x) * 0.1; continue; }
-          let nx = x - fx / d, lam = 1;
-          while (lam > 1e-4 && Math.abs(f(nx)) > Math.abs(fx) * 1.5) { lam /= 2; nx = x - lam * fx / d; }
-          if (Math.abs(nx - x) < 1e-15 * Math.max(1, Math.abs(x))) { x = nx; break; }
-          x = nx;
-        }
-        ok = ok || Math.abs(f(x)) < 1e-10 * Math.max(1, Math.abs(x));
-      } catch (e) { C.showError(e.code ? e : new C.CalcError('CantSolve')); return; }
-      if (!Number.isFinite(x)) { C.showError(new C.CalcError('CantSolve')); return; }
-      x = Number(x.toPrecision(15)); if (Math.abs(x) < 1e-14) x = 0;
-      let lr = f(x); if (Math.abs(lr) < 1e-14 * Math.max(1, Math.abs(x))) lr = 0;
+      const r = solveNumeric(f, num(G.vars[t] || Q(0)));
+      if (!r.ok) { C.showError(new C.CalcError('CantSolve')); return; }
+      let x = Number(r.x.toPrecision(15)); if (Math.abs(x) < 1e-14) x = 0;
+      let lr; try { lr = f(x); } catch (e) { lr = 0; }
+      if (Math.abs(lr) < 1e-14 * Math.max(1, Math.abs(x))) lr = 0;
       G.vars[t] = x; G.ans = x; C.save();
       sv.res = { x, lr };
-      if (!ok) {
-        C.menu([{ label: '継続する', action: () => { C.popAll(); this.runSolver(true); } }, { label: '終了する', action: () => { C.popAll(); this.view = 'solres'; } }], {
-          status: true, title: '<span class="big">' + VNI(t) + '=' + esc(C.shortText(x, G.s, 10)) + '</span>', titleHtml: true,
-        });
-        return;
-      }
       this.view = 'solres';
     },
     render() {
