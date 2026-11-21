@@ -3,33 +3,58 @@
   'use strict';
   const G = C.G, esc = C.esc;
 
-  // ===== キー配列 =====
-  // [id, 表示, SHIFT表示, クラス, n進表示]
-  const FN_ROWS = [
-    [['x', '<i>x</i>', '='], ['frac', '<span style="font-size:10px">▭</span>/<span style="font-size:10px">▭</span>', '帯分数'], ['sqrt', '√▭', '∛▭'], ['sq', '<i>x</i><sup>2</sup>', '<i>x</i><sup>3</sup>'], ['pow', '<i>x</i><sup>▪</sup>', '<sup>▪</sup>√▭'], ['logb', 'log<sub>▪</sub>▭', '10<sup>▪</sup>']],
-    [['fx', '<i>f</i>(<i>x</i>)', '<i>g</i>(<i>x</i>)', 'sm'], ['sin', 'sin', 'sin⁻¹'], ['cos', 'cos', 'cos⁻¹'], ['tan', 'tan', 'tan⁻¹'], ['ln', 'ln', 'e<sup>▪</sup>'], ['inv', '<i>x</i><sup>−1</sup>', '<i>x</i>!']],
-    [['neg', '(−)', '∠'], ['dms', '°′″', '<i>i</i>'], ['lp', '(', '%'], ['rp', ')', ','], ['sd', 'S⇔D', ''], ['format', 'FORMAT', 'QR', 'sm']],
-  ];
-  const BASE_LBL = { x: 'A', frac: 'B', sqrt: 'C', sq: 'D', pow: 'E', logb: 'F' };
+  // ===== キー配列（実機の配置に準拠） =====
+  // [物理キーID, キートップ, SHIFT表示, クラス]
+  const I = {
+    home: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 11 L12 4 L20 11 V20 H4 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>',
+    back: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 6 L4 10 L8 14 M4 10 H14 A5 5 0 0 1 14 20 H9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" width="22" height="22"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6H20M4 12H20M4 18H20"/></g><g fill="currentColor"><rect x="7" y="3.5" width="3.5" height="5" rx="1"/><rect x="13.5" y="9.5" width="3.5" height="5" rx="1"/><rect x="6" y="15.5" width="3.5" height="5" rx="1"/></g></svg>',
+    variable: '<span style="font-size:13px;letter-spacing:-1px">⇄</span><i style="font-family:serif;font-size:19px;border:1.5px solid currentColor;border-radius:3px;padding:0 2px;line-height:17px;margin-left:1px">x</i>',
+    catalog: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 6 C9 4 6 4 3 5 V19 C6 18 9 18 12 20 C15 18 18 18 21 19 V5 C18 4 15 4 12 6 Z M12 6 V20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
+    tools: '<span style="letter-spacing:1px;font-size:15px">∘∘∘</span>',
+    frac: '<svg viewBox="0 0 24 24" width="22" height="22"><rect x="7" y="3" width="10" height="7" rx="1" fill="currentColor"/><rect x="4" y="11.2" width="16" height="1.8" fill="currentColor"/><rect x="7" y="14" width="10" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    sqrt: '<span style="font-size:20px">√</span><span class="bx1"></span>',
+    pow: '<span class="bx1 big"></span><span class="bx2 sup"></span>',
+    sq: '<span class="bx1 big"></span><b class="sup" style="font-size:13px">2</b>',
+    del: '<svg viewBox="0 0 28 20" width="28" height="20"><path d="M9 2 H26 V18 H9 L2 10 Z" fill="currentColor"/><path d="M13 6 L21 14 M21 6 L13 14" stroke="#3b3c3f" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    format: '<span style="font-size:11px;font-weight:700;letter-spacing:-.5px;position:relative">FORMAT<span style="position:absolute;left:-2px;right:-2px;top:-9px;font-size:10px;text-align:center">⌒</span><span style="position:absolute;left:-2px;right:-2px;bottom:-11px;font-size:10px;text-align:center;transform:rotate(180deg)">⌒</span></span>',
+    shift: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 4 L20 12 H15.5 V20 H8.5 V12 H4 Z" fill="#232323"/></svg>',
+  };
+  const ROW_A = [['shift', I.shift, '', 'shift'], ['x', '<i class="serif">x</i>', '<i>f</i>(<i>x</i>)'], ['variable', I.variable, '', '', 'VARIABLE'], null, ['catalog', I.catalog, '', '', '<span style="color:var(--sl)">☰</span> CATALOG'], ['tools', I.tools, '', '', 'TOOLS']];
+  const ROW_B = [['dms', '°′″', 'QR'], ['frac', I.frac, '▪▭/▭'], ['sqrt', I.sqrt, '<sup>▪</sup>√▫'], ['pow', I.pow, '▪<sup>−1</sup>'], ['sq', I.sq, 'log<sub>▪</sub>▫'], ['log', 'log', 'ln']];
+  const ROW_C = [['ans', 'Ans', 'Pre<br>Ans', 'tight'], ['sin', 'sin', 'sin⁻¹'], ['cos', 'cos', 'cos⁻¹'], ['tan', 'tan', 'tan⁻¹'], ['lp', '(', '='], ['rp', ')', ',']];
   const NUM_ROWS = [
-    [['7', '7', ''], ['8', '8', ''], ['9', '9', ''], ['del', 'DEL', 'INS', 'del'], ['ac', 'AC', 'OFF', 'ac']],
-    [['4', '4', ''], ['5', '5', ''], ['6', '6', ''], ['mul', '×', '<i>n</i>P<i>r</i>', 'op'], ['div', '÷', '÷R', 'op']],
-    [['1', '1', ''], ['2', '2', ''], ['3', '3', ''], ['add', '+', '<i>n</i>C<i>r</i>', 'op'], ['sub', '−', 'PreAns', 'op']],
-    [['0', '0', 'Ran#'], ['.', '.', '循環'], ['exp', '×10<sup><i>x</i></sup>', 'π', 'sm'], ['ans', 'Ans', '<i>e</i>', 'sm'], ['exe', 'EXE', '≈', 'exe']],
+    [['7', '7', '<i>π</i>'], ['8', '8', '∠'], ['9', '9', '<i>i</i>'], ['del', I.del, 'INS'], ['ac', 'AC', '<span class="offpill">OFF</span>']],
+    [['4', '4', 'A'], ['5', '5', 'B'], ['6', '6', 'C'], ['mul', '×', '<i>e</i>'], ['div', '÷', '<i>e</i><sup>▪</sup>']],
+    [['1', '1', 'D'], ['2', '2', 'E'], ['3', '3', 'F'], ['add', '+', '÷R'], ['sub', '−', '(−)']],
+    [['0', '0', '<i>x</i>'], ['.', '.', '<i>y</i>'], ['exp', '×10<sup>▪</sup>', '<i>z</i>'], ['format', I.format, '↻'], ['exe', '=', 'S+']],
   ];
-  function keyHtml([id, lbl, sl, cls], extraCls) {
-    return '<div class="kw"><span class="sl">' + (sl || '') + '</span><button class="k ' + (cls || '') + ' ' + (extraCls || '') + '" data-k="' + id + '">' + lbl + '</button>' + (BASE_LBL[id] ? '<span class="bx">' + BASE_LBL[id] + '</span>' : '') + '</div>';
+  // 物理キー（SHIFTなし／あり）→ 論理キー
+  const PHYS = { log: 'log' };
+  const PHYS_S = {
+    x: 'fx', dms: 'S-format', frac: 'S-frac', sqrt: 'S-pow', pow: 'inv', sq: 'logb', log: 'ln', ans: 'S-sub',
+    sin: 'S-sin', cos: 'S-cos', tan: 'S-tan', lp: 'S-x', rp: 'S-rp', 7: 'S-exp', 8: 'S-neg', 9: 'S-dms', del: 'S-del', ac: 'S-ac',
+    4: 'var:A', 5: 'var:B', 6: 'var:C', mul: 'S-ans', div: 'S-ln', 1: 'var:D', 2: 'var:E', 3: 'var:F', add: 'S-div', sub: 'neg',
+    0: 'var:x', '.': 'var:y', exp: 'var:z', format: 'S⇔D', exe: 'S-exe', catalog: 'catalog', tools: 'tools', variable: 'variable',
+    home: 'home', settings: 'settings', back: 'back', ok: 'ok', up: 'up', down: 'down', left: 'left', right: 'right', pgup: 'pgup', pgdn: 'pgdn', on: 'on',
+  };
+  C.translateKey = (k, shift) => (shift ? (PHYS_S[k] || 'S-' + k) : (PHYS[k] || k));
+
+  function keyHtml(def, cls) {
+    if (!def) return '<div class="kw"></div>';
+    const [id, lbl, sl, kcls, top] = def;
+    return '<div class="kw' + (cls ? ' ' + cls : '') + '">' + (top ? '<span class="tl">' + top + '</span>' : '<span class="sl">' + (sl ? sl + '<span class="hook"></span>' : '') + '</span>') + '<button class="k ' + (kcls || '') + '" data-k="' + id + '" aria-label="' + id + '">' + lbl + '</button>' + (top && sl ? '<span class="sl2">' + sl + '</span>' : '') + '</div>';
   }
   function buildKeys() {
     const top = '<div class="top">' +
-      keyHtml(['shift', 'SHIFT', '', 'sm shift']) + keyHtml(['catalog', 'CATALOG', '', 'sm']) +
-      '<div class="pad"><button class="up" data-k="up">▲</button><button class="left" data-k="left">◀</button><button class="ok" data-k="ok">OK</button><button class="right" data-k="right">▶</button><button class="down" data-k="down">▼</button></div>' +
-      keyHtml(['home', 'HOME', '', 'sm']) + keyHtml(['settings', 'SETTINGS', '', 'sm']) +
-      keyHtml(['variable', 'VARIABLE', '', 'sm']) + keyHtml(['tools', 'TOOLS', '', 'sm']) +
-      keyHtml(['back', 'BACK', '', 'sm']) + keyHtml(['on', 'ON', '', 'sm on']) + '</div>';
-    let fn = '<div class="fn">'; for (const r of FN_ROWS) for (const k of r) fn += keyHtml(k); fn += '</div>';
+      '<div class="tc"><span class="tl">ON</span><button class="k round on" data-k="on" aria-label="ON"><span class="knob"></span></button><span class="tl">SETTINGS</span><button class="k round" data-k="settings" aria-label="SETTINGS">' + I.settings + '</button></div>' +
+      '<div class="tc"><span class="tl">HOME</span><button class="k round" data-k="home" aria-label="HOME">' + I.home + '</button><span class="tl">&nbsp;</span><button class="k round" data-k="back" aria-label="BACK">' + I.back + '</button></div>' +
+      '<div class="pad"><button class="up" data-k="up" aria-label="up">︿</button><button class="left" data-k="left" aria-label="left">〈</button><button class="ok" data-k="ok">OK</button><button class="right" data-k="right" aria-label="right">〉</button><button class="down" data-k="down" aria-label="down">﹀</button></div>' +
+      '<div class="pg"><button data-k="pgup" aria-label="page up">︽</button><button data-k="pgdn" aria-label="page down">︾</button></div>' +
+      '</div>';
+    const row = (r, c) => '<div class="' + c + '">' + r.map((k) => keyHtml(k)).join('') + '</div>';
     let nm = '<div class="num">'; for (const r of NUM_ROWS) for (const k of r) nm += keyHtml(k); nm += '</div>';
-    document.getElementById('keys').innerHTML = top + fn + nm;
+    document.getElementById('keys').innerHTML = top + row(ROW_A, 'fn rowa') + row(ROW_B, 'fn') + row(ROW_C, 'fn') + nm;
   }
 
   // ===== アプリ =====
@@ -138,8 +163,7 @@
     if (!lcd) return;
     lcd.classList.toggle('off', !G.power);
     document.documentElement.style.setProperty('--contrast', G.s.contrast);
-    document.querySelector('.device').classList.toggle('base', !!(G.app && G.app.id === 'base'));
-    if (!G.power) return;
+        if (!G.power) return;
     const top = C.top();
     let body = '';
     try { body = top ? top.render() : G.app.render(); } catch (e) { console.error(e); body = '<div class="msg">表示エラー</div>'; }
@@ -177,19 +201,25 @@
   // ===== キー処理 =====
   let apoTimer = null;
   function resetApo() { clearTimeout(apoTimer); apoTimer = setTimeout(() => { G.power = false; G.shift = false; C.render(); }, G.s.apo * 60000); }
+  // 物理キー押下（画面上のボタン）
   C.press = function (k) {
+    if (k === 'shift' || k === 'on') return C.pressLogical(k);
+    const sh = G.shift; if (sh) G.shift = false;
+    return C.pressLogical(C.translateKey(k, sh));
+  };
+  // 論理キー押下
+  C.pressLogical = function (k) {
     resetApo();
     if (k === 'on') { if (!G.power) { G.power = true; G.shift = false; C.render(); return; } G.shift = false; C.render(); return; }
     if (!G.power) return;
     if (k === 'shift') { G.shift = !G.shift; C.render(); return; }
     let key = k;
-    if (G.shift) { key = 'S-' + k; G.shift = false; }
+    if (G.shift && !k.startsWith('S-')) { key = 'S-' + k; G.shift = false; }
     if (key === 'S-ac') { G.power = false; G.ov.length = 0; C.save(); C.render(); return; }
     if (key === 'S-on') key = 'on';
-    if (key === 'sd') key = 'S⇔D';
-    if (key === 'S-sd') key = 'S⇔D';
     try {
       const top = C.top();
+      if (key === 'pgup' || key === 'pgdn') key = top instanceof C.Menu ? (key === 'pgup' ? 'left' : 'right') : (key === 'pgup' ? 'up' : 'down');
       if (key === 'home') { openHome(); C.render(); return; }
       if (key === 'settings' && !top) { openSettings(); C.render(); return; }
       if (top) {
@@ -221,7 +251,7 @@
     const KB = {
       Enter: 'exe', '=': 'exe', Backspace: 'del', Delete: 'ac', Escape: 'back', ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
       '+': 'add', '-': 'sub', '*': 'mul', '/': 'div', '(': 'lp', ')': 'rp', '^': 'pow', '.': '.', ',': 'S-rp', '%': 'S-lp', '!': 'S-inv',
-      s: 'sin', c: 'cos', t: 'tan', l: 'ln', g: 'logb', r: 'sqrt', x: 'x', e: 'exp', p: 'S-exp', a: 'ans', f: 'frac', i: 'S-dms', h: 'home', o: 'ok',
+      s: 'sin', c: 'cos', t: 'tan', l: 'ln', L: 'log', g: 'logb', S: 'shift', r: 'sqrt', x: 'x', e: 'exp', p: 'S-exp', a: 'ans', f: 'frac', i: 'S-dms', h: 'home', o: 'ok',
       v: 'variable', k: 'catalog', T: 'tools', F: 'format', m: 'settings', n: 'neg', q: 'sq', Tab: 'shift', b: 'back', d: 'dms', u: 'fx', E: 'S-exe',
     };
     document.addEventListener('keydown', (ev) => {
@@ -230,8 +260,7 @@
       if (/^[0-9]$/.test(ev.key)) k = ev.key;
       if (!k) return;
       ev.preventDefault();
-      if (k.startsWith('S-')) { G.shift = true; k = k.slice(2); }
-      C.press(k);
+      C.pressLogical(k);
       const btn = document.querySelector('[data-k="' + CSS.escape(k) + '"]'); if (btn) { btn.classList.add('press'); setTimeout(() => btn.classList.remove('press'), 90); }
     });
   }

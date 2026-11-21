@@ -120,9 +120,13 @@
   C.inputKey = function (ed, k, opt) {
     opt = opt || {};
     const math = ed.mode === 'math';
+    if (k.startsWith('var:')) {
+      const v = k.slice(4);
+      if (opt.base) { if (/^[A-F]$/.test(v)) ed.insert('hx' + v); return true; }
+      ed.insert(v === 'E' ? 'E_' : v); return true;
+    }
+    if (k === 'log') { ed.insert('log('); return true; }
     if (opt.base) {
-      const hx = { x: 'A', frac: 'B', sqrt: 'C', sq: 'D', pow: 'E', logb: 'F' };
-      if (hx[k]) { ed.insert('hx' + hx[k]); return true; }
       if (['.', 'exp', 'S-exp', 'S-ans', 'sin', 'cos', 'tan', 'ln', 'S-sin', 'S-cos', 'S-tan', 'S-ln', 'dms', 'S-dms', 'S-neg', 'inv', 'S-inv', 'S-sq', 'S-pow', 'S-sqrt', 'S-frac', 'S-logb', 'S-0', 'S-.', 'S-lp', 'S-mul', 'S-add', 'S-div'].includes(k)) return true;
     }
     if (/^[0-9]$/.test(k)) { ed.insert(k); return true; }
@@ -177,7 +181,7 @@
     unit: () => ['単位換算', null, () => C.UNIT_MENU.map(([name, , subs]) => ({ label: name, sub: () => (subs.length === 1 && subs[0][0] === '' ? unitItems(subs[0][1]) : subs.map(([sn, list]) => ({ label: sn, sub: () => unitItems(list) }))) }))],
     const: () => ['科学定数', null, () => C.CONST_CATS.map(([name, list]) => ({ label: name, sub: () => list.map(([key, sym, nm]) => ({ label: sym, right: nm, insert: { tok: 'c:' + key } })) }))],
     pt: () => ['周期表', null, () => [{ label: '周期表', action: () => C.openPeriodic() }, { label: '原子量 AtWt(', insert: { tok: 'AtWt(' } }]],
-    other: () => ['その他', [T('Ans', 'Ans'), T('PreAns', 'PreAns'), T('π', 'π'), T('e', 'e'), TP('10^■', 'pow', ['10^('], '', ['1', '0']), TP('e^■', 'pow', ['e^('], '', ['e']), TP('∛ 立方根', 'root', ['∛('], '', null, { n: ['3'] }), TP('ˣ√ べき乗根', 'root', ['xrt(']), T('x⁻¹', '⁻¹'), T('= ', '='), T('≠', '≠'), T('<', '<'), T('>', '>'), T('≤', '≤'), T('≥', '≥'), T(': 区切り', ':'), T(',', ','), T('(', '('), T(')', ')')]],
+    other: () => ['その他', [T('x² 2乗', '²'), T('x³ 3乗', '³'), T('x⁻¹ 逆数', '⁻¹'), TP('循環小数', 'recur', []), T('Ans', 'Ans'), T('PreAns', 'PreAns'), T('π', 'π'), T('e', 'e'), TP('10^■', 'pow', ['10^('], '', ['1', '0']), TP('e^■', 'pow', ['e^('], '', ['e']), TP('∛ 立方根', 'root', ['∛('], '', null, { n: ['3'] }), TP('ˣ√ べき乗根', 'root', ['xrt(']), T('x⁻¹', '⁻¹'), T('= ', '='), T('≠', '≠'), T('<', '<'), T('>', '>'), T('≤', '≤'), T('≥', '≥'), T(': 区切り', ':'), T(',', ','), T('(', '('), T(')', ')')]],
     cplx: () => ['複素数計算', [T('i 虚数単位', 'i'), T('∠ 偏角記号', '∠'), T('Arg( 偏角', 'Arg('), T('Conjg( 共役複素数', 'Conjg('), T('ReP( 実部', 'ReP('), T('ImP( 虚部', 'ImP('), TP('Abs 絶対値', 'abs', ['Abs(']), T('▸r∠θ 極座標形式', '▶r∠θ'), T('▸a+bi 直交座標形式', '▶a+bi')]],
     baseSel: () => ['基数指定', [T('d 10進数', 'd:'), T('h 16進数', 'h:'), T('b 2進数', 'b:'), T('o 8進数', 'o:')]],
     logic: () => ['論理演算', [T('and', 'and'), T('or', 'or'), T('xor', 'xor'), T('xnor', 'xnor'), T('Not(', 'Not('), T('Neg(', 'Neg(')]],
@@ -380,7 +384,7 @@
       this.browsing = false;
       return C.inputKey(ed, k, { mode: this.mode, base: this.mode === 'base' });
     }
-    isInputKey(k) { return /^[0-9]$/.test(k) || ['.', 'exp', 'S-exp', 'ans', 'S-ans', 'add', 'sub', 'mul', 'div', 'S-mul', 'S-div', 'S-add', 'S-sub', 'lp', 'rp', 'S-lp', 'S-rp', 'neg', 'S-neg', 'dms', 'S-dms', 'x', 'S-x', 'sin', 'cos', 'tan', 'S-sin', 'S-cos', 'S-tan', 'ln', 'S-ln', 'inv', 'S-inv', 'sq', 'S-sq', 'pow', 'S-pow', 'sqrt', 'S-sqrt', 'frac', 'S-frac', 'logb', 'S-logb', 'S-.', 'S-0'].includes(k); }
+    isInputKey(k) { return /^[0-9]$/.test(k) || k.startsWith('var:') || k === 'log' || ['.', 'exp', 'S-exp', 'ans', 'S-ans', 'add', 'sub', 'mul', 'div', 'S-mul', 'S-div', 'S-add', 'S-sub', 'lp', 'rp', 'S-lp', 'S-rp', 'neg', 'S-neg', 'dms', 'S-dms', 'x', 'S-x', 'sin', 'cos', 'tan', 'S-sin', 'S-cos', 'S-tan', 'ln', 'S-ln', 'inv', 'S-inv', 'sq', 'S-sq', 'pow', 'S-pow', 'sqrt', 'S-sqrt', 'frac', 'S-frac', 'logb', 'S-logb', 'S-.', 'S-0'].includes(k); }
     prepInput(k) {
       if (this.state !== 'result') return;
       this.state = 'edit'; this.queue = null;
@@ -505,7 +509,7 @@
       if (k === 'left' || k === 'right') { if (!f.editing) { f.editing = true; if (k === 'right') f.ed.toStart(); else f.ed.toEnd(); return true; } C.inputKey(f.ed, k, {}); return true; }
       if (!f.editing) {
         if (k === 'del') { f.ed.clear(); return true; }
-        if (/^[0-9]$/.test(k) || ['.', 'neg', 'sub', 'exp', 'S-exp', 'ans', 'lp', 'sqrt', 'frac', 'sin', 'cos', 'tan', 'ln', 'logb', 'x', 'S-ans', 'S-0'].includes(k)) { f.ed.clear(); f.editing = true; }
+        if (/^[0-9]$/.test(k) || k.startsWith('var:') || ['.', 'neg', 'sub', 'exp', 'S-exp', 'ans', 'lp', 'sqrt', 'frac', 'sin', 'cos', 'tan', 'ln', 'log', 'logb', 'x', 'S-ans', 'S-0', 'S-dms'].includes(k)) { f.ed.clear(); f.editing = true; }
         else return true;
       }
       C.inputKey(f.ed, k, { allowI: f.allowCx, mode: f.allowCx ? 'cplx' : 'calc' });

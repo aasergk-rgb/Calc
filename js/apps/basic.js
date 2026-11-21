@@ -69,7 +69,7 @@
       if (k === 'left') { this.move(0, -1); return true; }
       if (k === 'right') { this.move(0, 1); return true; }
       if (k === 'del' && this.onDel) { this.onDel(this.r, this.c); return true; }
-      if (/^[0-9]$/.test(k) || ['.', 'neg', 'sub', 'exp', 'S-exp', 'ans', 'S-ans', 'lp', 'sqrt', 'frac', 'sin', 'cos', 'tan', 'ln', 'logb', 'S-sin', 'S-cos', 'S-tan', 'S-ln', 'S-logb', 'S-sqrt', 'S-dms', 'S-0', 'x'].includes(k)) {
+      if (/^[0-9]$/.test(k) || ['.', 'neg', 'sub', 'exp', 'S-exp', 'ans', 'S-ans', 'lp', 'sqrt', 'frac', 'sin', 'cos', 'tan', 'ln', 'logb', 'S-sin', 'S-cos', 'S-tan', 'S-ln', 'S-logb', 'S-sqrt', 'S-dms', 'S-0', 'x', 'log', 'logb', 'S-exp', 'S-sub', 'S-pow'].includes(k) || k.startsWith('var:')) {
         if (this.canEdit && !this.canEdit(this.r, this.c)) return true;
         this.startEdit(k); return true;
       }
@@ -136,7 +136,7 @@
     extraTools() { return BASES.map(([k, l]) => ({ label: l, checked: () => (G.appState.base || 'dec') === k, action: () => { setBase(k); C.popAll(); } })); },
     keyHook(k) {
       // SHIFT+ sin/cos/tan/ln で基数切替（DEC/HEX/BIN/OCT）
-      const map = { 'S-sin': 'dec', 'S-cos': 'hex', 'S-tan': 'bin', 'S-ln': 'oct' };
+      const map = { 'S-sin': 'dec', 'S-cos': 'hex', 'S-tan': 'bin', ln: 'oct' };
       if (map[k]) { setBase(map[k]); return true; }
       return false;
     },
