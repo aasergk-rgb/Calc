@@ -20,8 +20,8 @@
     let out = ip + (fp !== undefined ? (s.decMark === ',' ? ',' : '.') + fp : '');
     return (neg ? '-' : '') + out;
   }
-  function expHtml(mant, ex, s) { return '<span class="tk">' + esc(decStr(mant, s)) + '</span><span class="tk">×10</span><span class="sup">' + esc(String(ex).replace('-', '−')) + '</span>'; }
-  const neg2 = (h) => h.replace(/^-/, '−');
+  function expHtml(mant, ex, s) { return '<span class="tk">' + esc(decStr(mant, s)) + '</span><span class="x10">×10</span><span class="sup">' + esc(String(ex).replace('-', '-')) + '</span>'; }
+  const neg2 = (h) => h;
 
   // 近似値の表示 -> {html, text}
   function fmtFloat(v, s, forceEng) {
@@ -100,19 +100,19 @@
     if (mixed && an > d) {
       const w = an / d, r = an % d;
       if (ndig(w) + ndig(r) + ndig(d) + 2 > 10) return null;
-      if (math) return { html: (neg ? tk('−') : '') + tk(w.toString()) + fracHtml(tk(r.toString()), tk(d.toString())), text: (neg ? '-' : '') + w + '⌟' + r + '⌟' + d };
-      return { html: tk((neg ? '−' : '') + w + '⌟' + r + '⌟' + d), text: (neg ? '-' : '') + w + '⌟' + r + '⌟' + d };
+      if (math) return { html: (neg ? tk('-') : '') + tk(w.toString()) + fracHtml(tk(r.toString()), tk(d.toString())), text: (neg ? '-' : '') + w + '⌟' + r + '⌟' + d };
+      return { html: tk((neg ? '-' : '') + w + '⌟' + r + '⌟' + d), text: (neg ? '-' : '') + w + '⌟' + r + '⌟' + d };
     }
     if (ndig(an) + ndig(d) + 1 > 10) return null;
-    if (math) return { html: (neg ? tk('−') : '') + fracHtml(tk(an.toString()), tk(d.toString())), text: n + '/' + d };
-    return { html: tk((neg ? '−' : '') + an + '⌟' + d), text: n + '⌟' + d };
+    if (math) return { html: (neg ? tk('-') : '') + fracHtml(tk(an.toString()), tk(d.toString())), text: n + '/' + d };
+    return { html: tk((neg ? '-' : '') + an + '⌟' + d), text: n + '⌟' + d };
   }
   function surdTerm(c, r, first) { // c: BigInt coef (signed), r radicand
     const neg = c < 0n, a = E.babs(c);
     let h = '';
-    if (neg) h += tk('−'); else if (!first) h += tk('+');
+    if (neg) h += tk(first ? '-' : '−'); else if (!first) h += tk('+');
     if (r === 1n) h += tk(a.toString());
-    else { if (a !== 1n) h += tk(a.toString()); h += '<span class="sqrt"><span class="rad">√</span><span class="rc"><span class="row">' + tk(r.toString()) + '</span></span></span>'; }
+    else { if (a !== 1n) h += tk(a.toString()); h += '<span class="sqrt">' + C.RAD + '<span class="rc"><span class="row">' + tk(r.toString()) + '</span></span></span>'; }
     return h;
   }
   function fmtSurd(x, s) {
@@ -125,7 +125,7 @@
     terms.sort((a, b) => (a[1] === 1n ? -1 : b[1] === 1n ? 1 : 0));
     if (D === 1n) { let h = ''; terms.forEach(([c, r], i) => { h += surdTerm(c, r, i === 0); }); return { html: h, text: '√' }; }
     let sign = '';
-    if (terms.length === 1 && terms[0][0] < 0n) { sign = tk('−'); terms[0][0] = -terms[0][0]; }
+    if (terms.length === 1 && terms[0][0] < 0n) { sign = tk('-'); terms[0][0] = -terms[0][0]; }
     let numH = ''; terms.forEach(([c, r], i) => { numH += surdTerm(c, r, i === 0); });
     return { html: sign + fracHtml(numH, tk(D.toString())), text: '√' };
   }
@@ -134,9 +134,8 @@
     const n = x.n, d = x.d, an = E.babs(n);
     if (an >= 1000n || d >= 1000n) return null;
     const neg = n < 0n;
-    const numH = (an === 1n ? '' : tk(an.toString())) + tk('π');
-    if (d === 1n) return { html: (neg ? tk('−') : '') + numH, text: 'π' };
-    return { html: (neg ? tk('−') : '') + fracHtml(numH, tk(d.toString())), text: 'π' };
+    if (d === 1n) return { html: (neg ? tk('-') : '') + (an === 1n ? '' : tk(an.toString())) + tk('π'), text: 'π' };
+    return { html: (neg ? tk('-') : '') + fracHtml(tk(an.toString()), tk(d.toString())) + tk('π'), text: 'π' };
   }
 
   // 実数を表示
@@ -170,7 +169,7 @@
     let d = Math.floor(v); let mf = (v - d) * 60; let m = Math.floor(mf + 1e-9); let sec = (mf - m) * 60;
     sec = Math.round(sec * 100) / 100; if (sec >= 60) { sec -= 60; m++; } if (m >= 60) { m -= 60; d++; }
     let secS = Number(sec.toFixed(2)).toString();
-    const t = (neg ? '−' : '') + d + '°' + m + '′' + secS + '″';
+    const t = (neg ? '-' : '') + d + '°' + m + "'" + secS + '"';
     return { html: tk(t), text: t };
   }
   function primeFactor(x) {
@@ -197,7 +196,8 @@
     const st = seen.get(r);
     const pre = digits.slice(0, st), rep = digits.slice(st);
     if (ip.toString().length + digits.length + 4 > 99) return null;
-    const html = tk((neg ? '−' : '') + ip + '.' + pre) + '<span class="recur">' + tk(rep) + '</span>';
+    const dots = '<span class="dot" style="left:4px"></span>' + (rep.length > 1 ? '<span class="dot" style="right:4px"></span>' : '');
+    const html = tk((neg ? '-' : '') + ip + '.' + pre) + '<span class="recur">' + dots + tk(rep) + '</span>';
     return { html, text: '' };
   }
 
@@ -215,9 +215,9 @@
     if (sg !== 0) {
       const absIm = sg < 0 ? E.neg(im) : im;
       const one = E.isRat(absIm) && E.ratOf(absIm)[0] === E.ratOf(absIm)[1];
-      if (sg < 0) h += tk('−'); else if (!reZ) h += tk('+');
+      if (sg < 0) h += tk(reZ ? '-' : '−'); else if (!reZ) h += tk('+');
       if (!one) h += fmtReal(absIm, s, mode).html;
-      h += '<span class="tk ital">i</span>';
+      h += '<span class="tk">𝑖</span>';
     }
     if (!h) h = tk('0');
     return { html: h, text: '' };
@@ -241,19 +241,23 @@
     }
     if (V.isCx(v)) return fmtComplex(v, s, mode);
     if (V.isMat(v)) {
-      let h = '<span class="mat"><span class="mtab">';
-      for (const row of v.a) { h += '<span class="mrow">'; for (const e of row) h += '<span class="mcell">' + fmtReal(e, s, mode).html + '</span>'; h += '</span>'; }
-      return { html: h + '</span></span>', text: '' };
+      let h = '<span class="mat"><span class="br l"></span><span class="mtab">';
+      for (const row of v.a) { h += '<span class="mrow">'; for (const e of row) h += '<span class="mcell">' + esc(C.shortText(e, s, 8)) + '</span>'; h += '</span>'; }
+      return { html: h + '</span><span class="br r"></span></span>', text: '' };
     }
     if (V.isVec(v)) {
       let h = '<span class="vec">' + tk('['); v.a.forEach((e, i) => { if (i) h += tk(s.decMark === ',' ? ';' : ','); h += fmtReal(e, s, mode).html; }); return { html: h + tk(']') + '</span>', text: '' };
     }
     if (v.k === 'list') {
-      const parts = v.items.map(([l, x]) => '<span class="li">' + tk(l + '=') + fmtValue(x, s, mode).html + '</span>');
-      return { html: '<span class="list">' + parts.join('') + '</span>', text: '' };
+      const sep = s.decMark === ',' ? ';' : ',';
+      const parts = v.items.map(([l, x]) => tk((l === 'θ' ? 'θ' : l === 'x' ? '𝑥' : l === 'y' ? '𝑦' : l) + '=') + fmtValue(x, s, mode).html);
+      return { html: '<span class="ln">' + parts.join(tk(sep)) + '</span>', text: '' };
     }
-    if (v.k === 'divR') return { html: '<span class="list"><span class="li">' + tk('Q=') + fmtValue(v.q, s, mode).html + '</span><span class="li">' + tk('R=') + fmtValue(v.r, s, mode).html + '</span></span>', text: '' };
-    if (v.k === 'bool') return { html: '<span class="tk verify">' + (v.v ? '正しい' : '誤り') + '</span>', text: '' };
+    if (v.k === 'divR') {
+      if (s.io === 'll' || s.io === 'ld') return { html: fmtValue(v.q, s, mode).html, text: '', extra: { label: 'R=', html: fmtValue(v.r, s, mode).html } };
+      return { html: '<span class="ln">' + fmtValue(v.q, s, mode).html + tk((s.decMark === ',' ? ';' : ',') + 'R=') + fmtValue(v.r, s, mode).html + '</span>', text: '' };
+    }
+    if (v.k === 'bool') return { html: '<span class="verify">' + (v.v ? '真' : '偽') + '</span>', text: '' };
     return { html: '', text: '' };
   }
 
@@ -278,19 +282,19 @@
   };
 
   // FORMAT メニューに出す項目の判定
-  C.formatOptions = function (v, s) {
+  C.formatOptions = function (v, s, mode) {
     const out = [];
     if (V.isReal(v)) {
-      out.push(['std', '標準']);
-      out.push(['dec', '小数']);
-      if (E.isRat(v) && E.ratOf(v)[1] !== 1n) { out.push(['improper', '仮分数']); out.push(['mixed', '帯分数']); }
-      out.push(['eng', 'ENG表記']);
-      if (primeFactor(v)) out.push(['prime', '素因数分解']);
-      out.push(['sexa', '60進数']);
-      if (recurring(v, s)) out.push(['recur', '循環小数']);
+      out.push(['std', '標準表示']);
+      out.push(['dec', '小数表示']);
+      if ((!mode || mode === 'calc') && primeFactor(v)) out.push(['prime', '素因数分解']);
+      if ((!mode || mode === 'calc') && recurring(v, s)) out.push(['recur', '循環小数表示']);
+      if (E.isRat(v) && E.ratOf(v)[1] !== 1n) { out.push(['improper', '仮分数表示']); out.push(['mixed', '帯分数表示']); }
+      out.push(['eng', 'エンジニアリング表示']);
+      out.push(['sexa', '度分秒表示']);
     } else if (V.isCx(v)) {
-      out.push(['std', '標準']); out.push(['dec', '小数']); out.push(['rect', '直交座標形式']); out.push(['polar', '極座標形式']);
-    } else if (V.isMat(v) || V.isVec(v)) { out.push(['std', '標準']); out.push(['dec', '小数']); }
+      out.push(['std', '標準表示']); out.push(['dec', '小数表示']); out.push(['rect', '直交座標表示']); out.push(['polar', '極座標表示']);
+    }
     return out;
   };
 

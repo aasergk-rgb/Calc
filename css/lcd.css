@@ -1,0 +1,163 @@
+/*
+  液晶表示（192×64 ドットの座標系で記述し、枠の幅に合わせて拡大する）
+  .fb … 太字ドット（入力・計算結果）  .fs … 小さい太字（指数）
+  .ft … 細字ドット（一覧・表）        .fj … 日本語メニュー
+*/
+.lcd-wrap { position: relative; width: 100%; aspect-ratio: 192 / 64; }
+.lcd {
+  position: absolute; left: 0; top: 0; width: 192px; height: 64px; overflow: hidden;
+  transform-origin: 0 0; transform: scale(var(--lcd-s, 1.65));
+  color: var(--lcd-fg); font: 12px/16px "DotGothic16", monospace; font-synthesis: none;
+  -webkit-font-smoothing: none;
+}
+.lcd .fb, .lcd .calc, .lcd .big { font: 14px/14px "KSDot", "DotGothic16", monospace; }
+.lcd .fs { font: 9px/9px "KSDotSmall", "KSDotThin", monospace; }
+.lcd .ft { font: 10px/10px "KSDotThin", "DotGothic16", monospace; }
+.lcd .fj { font: 12px/16px "DotGothic16", monospace; }
+.lcd i, .lcd .it { font-style: normal; }
+#status { position: absolute; left: 0; top: 0; width: 192px; height: 8px; }
+#screen { position: absolute; left: 0; top: 0; width: 192px; height: 64px; }
+.lcd.nost #status { display: none; }
+.lcd.off #status, .lcd.off #screen { visibility: hidden; }
+
+/* インジケーター */
+.ind { position: absolute; top: 0; height: 8px; display: block; }
+.ind svg { display: block; }
+.ind.txt { font: 9px/8px "KSDotThin"; letter-spacing: 0; }
+
+/* ---- 計算画面 ---- */
+.calc { position: absolute; left: 0; top: 8px; width: 192px; height: 56px; }
+.calc .in { position: absolute; left: 1px; top: 2px; right: 0; white-space: nowrap; overflow: hidden; }
+.calc .in.line { white-space: normal; word-break: break-all; line-height: 14px; right: 1px; max-height: 42px; }
+.calc .in.small { font: 10px/11px "KSDotThin", "DotGothic16"; }
+.calc .out { position: absolute; right: 1px; bottom: 1px; white-space: nowrap; text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+.calc .out .ln { display: flex; align-items: flex-end; }
+.calc .more-r { position: absolute; right: 0; top: 4px; }
+.calc .label-r { position: absolute; right: 1px; bottom: 1px; text-align: right; }
+.calc .eng { margin-left: 1px; }
+
+/* 数式 */
+.row { display: inline-flex; align-items: center; min-height: 11px; }
+.row.empty .ph { display: inline-block; width: 6px; height: 9px; border: 1px dotted currentColor; margin: 1px 1px 0; box-sizing: border-box; }
+.tk { white-space: pre; }
+.cur { display: inline-block; width: 2px; height: 12px; background: currentColor; margin: 0 -1px 0 0; animation: blink 1s steps(1) infinite; position: relative; z-index: 1; align-self: center; }
+.ovw .cur { width: 9px; height: 2px; align-self: flex-end; margin: 0 0 0 0; }
+.cur.full { width: 9px; }
+@keyframes blink { 50% { opacity: 0; } }
+.frac { display: inline-flex; flex-direction: column; align-items: center; margin: 0 1px; }
+.frac > .num { border-bottom: 1px solid currentColor; padding: 0 1px 1px; display: flex; justify-content: center; }
+.frac > .den { padding: 1px 1px 0; display: flex; justify-content: center; }
+.mixed { display: inline-flex; align-items: center; }
+.sup { font: 9px/9px "KSDotSmall", "KSDotThin"; align-self: flex-start; display: inline-flex; align-items: flex-start; margin-left: 1px; }
+.sup .frac { font: inherit; }
+.sub { font: 9px/9px "KSDotSmall", "KSDotThin"; align-self: flex-end; display: inline-flex; margin-bottom: -2px; }
+.sqrt { display: inline-flex; align-items: stretch; margin-left: 1px; }
+.sqrt .rad { width: 7px; align-self: stretch; flex: none; overflow: visible; }
+.sqrt .rc { border-top: 1px solid currentColor; padding: 2px 1px 0 0; display: inline-flex; align-items: center; margin-left: -1px; }
+.sqrt .idx { font: 9px/9px "KSDotSmall"; align-self: flex-start; margin-right: -4px; margin-top: -2px; }
+.abs { border-left: 1px solid currentColor; border-right: 1px solid currentColor; padding: 0 2px; margin: 0 1px; display: inline-flex; align-items: center; }
+.bigop { display: inline-flex; flex-direction: column; align-items: center; margin: 0 1px; }
+.bigop .lim { font: 9px/9px "KSDotSmall"; display: inline-flex; }
+.bigop .sym { line-height: 13px; }
+.evalat { display: inline-flex; align-items: flex-end; align-self: stretch; }
+.evalat .bar { width: 1px; background: currentColor; margin: 0 1px; align-self: stretch; }
+.recur { display: inline-flex; position: relative; }
+.recur .dot { position: absolute; top: -3px; width: 2px; height: 2px; background: currentColor; }
+.x10 { font: 10px/10px "KSDotThin"; align-self: flex-end; margin: 0 1px 0 0; letter-spacing: -1px; }
+.ovl { text-decoration: overline; text-decoration-thickness: 1px; }
+.verify { font: 12px/14px "DotGothic16"; }
+.mat { display: inline-flex; align-items: stretch; }
+.mat .br { width: 3px; border: 1px solid currentColor; }
+.mat .br.l { border-right: 0; } .mat .br.r { border-left: 0; }
+.mtab { display: inline-flex; flex-direction: column; padding: 0 2px; font: 10px/10px "KSDotThin"; }
+.mrow { display: flex; gap: 6px; justify-content: flex-end; }
+.mcell { display: inline-flex; justify-content: flex-end; min-width: 8px; }
+
+/* ---- メニュー（4行） ---- */
+.mn { position: absolute; left: 0; top: 0; width: 192px; height: 64px; }
+.mn.st { top: 8px; height: 56px; }
+.mi { position: absolute; left: 1px; height: 16px; line-height: 16px; white-space: nowrap; overflow: hidden; padding: 0 1px; display: flex; align-items: center; gap: 1px; }
+.mi.sel { background: var(--lcd-fg); color: var(--lcd-bg); }
+.mi .r { margin-left: auto; padding-left: 4px; }
+.mi .tri { margin-left: auto; padding-left: 2px; flex: none; }
+.mi.big, .mi .big { font: 14px/16px "KSDot", "DotGothic16"; }
+.mi.dis { opacity: .45; }
+.mn .bar { position: absolute; right: 1px; width: 2px; background: currentColor; }
+.mn .title { position: absolute; left: 2px; top: 0; height: 16px; line-height: 16px; white-space: nowrap; }
+.mi .radio { flex: none; margin-right: 1px; }
+.mi2 { position: absolute; height: 10px; line-height: 10px; font: 10px/10px "KSDotThin", "DotGothic16"; white-space: nowrap; overflow: hidden; padding: 0 1px; }
+.mi2.sel { background: var(--lcd-fg); color: var(--lcd-bg); }
+
+/* ---- HOME ---- */
+.home { position: absolute; left: 0; top: 0; width: 189px; height: 64px; }
+.home .app { position: absolute; width: 62px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+.home .app.sel { background: var(--lcd-fg); color: var(--lcd-bg); }
+.home .app svg { margin-top: 2px; }
+.home .app .nm { font: 12px/14px "DotGothic16"; white-space: nowrap; letter-spacing: -0.5px; }
+
+/* ---- メッセージ・エラー ---- */
+.msgbox { position: absolute; left: 0; top: 8px; width: 192px; height: 56px; }
+.msgbox .t { position: absolute; left: 2px; top: 1px; right: 2px; line-height: 14px; }
+.msgbox .warn { position: absolute; left: 88px; top: 19px; }
+.msgbox .btn { position: absolute; left: 1px; right: 1px; bottom: 0; height: 16px; line-height: 16px; padding-left: 2px; background: var(--lcd-fg); color: var(--lcd-bg); }
+.msgbox .c { position: absolute; left: 0; right: 0; top: 12px; text-align: center; }
+
+/* ---- フォーム（パラメーター入力） ---- */
+.fm { position: absolute; left: 0; top: 8px; width: 192px; height: 56px; }
+.fm .title { position: absolute; left: 2px; top: 0; height: 16px; line-height: 16px; white-space: nowrap; }
+.fr { position: absolute; left: 1px; right: 4px; height: 16px; display: flex; align-items: center; white-space: nowrap; overflow: hidden; padding-left: 1px; }
+.fr.sel { background: var(--lcd-fg); color: var(--lcd-bg); }
+.fr .lb { flex: none; }
+.fr .lb.big { font: 14px/16px "KSDot", "DotGothic16"; }
+.fr .vl { position: absolute; left: var(--vx, 72px); right: 2px; display: flex; align-items: center; overflow: hidden; font: 14px/16px "KSDot", "DotGothic16"; }
+.fr .tri { position: absolute; right: 1px; }
+.fm .bar { position: absolute; right: 1px; width: 2px; background: currentColor; }
+
+/* ---- 表（統計エディターなど） ---- */
+.tb { position: absolute; left: 0; top: 8px; width: 192px; height: 56px; font: 10px/10px "KSDotThin", "DotGothic16"; }
+.tb .col { position: absolute; top: 0; height: 50px; border-right: 1px solid currentColor; }
+.tb .rn { position: absolute; text-align: right; width: 10px; }
+.tb .hd { position: absolute; text-align: center; top: 1px; height: 9px; }
+.tb .cell { position: absolute; text-align: right; height: 10px; white-space: nowrap; overflow: hidden; padding-right: 1px; }
+.tb .cell.sel { background: var(--lcd-fg); color: var(--lcd-bg); }
+.tb .cell.mark { outline: 1px dotted currentColor; outline-offset: -1px; }
+.tb .val { position: absolute; right: 1px; bottom: 0; white-space: nowrap; font: 14px/14px "KSDot", "DotGothic16"; }
+.tb .edit { position: absolute; left: 1px; right: 1px; bottom: 0; height: 14px; white-space: nowrap; overflow: hidden; font: 14px/14px "KSDot", "DotGothic16"; display: flex; }
+.tb .side { position: absolute; top: 9px; white-space: nowrap; line-height: 14px; }
+.tb .msg { position: absolute; left: 1px; bottom: 0; font: 12px/14px "DotGothic16"; white-space: nowrap; }
+/* 表計算 */
+.ss .hcell { position: absolute; top: 0; height: 9px; text-align: center; background: var(--lcd-dim2); color: var(--lcd-bg); }
+.ss .hcell.on, .ss .rcell.on { background: var(--lcd-fg); }
+.ss .rcell { position: absolute; left: 0; width: 13px; height: 9px; text-align: center; background: var(--lcd-dim2); color: var(--lcd-bg); }
+.ss .scell { position: absolute; height: 10px; text-align: right; white-space: nowrap; overflow: hidden; padding-right: 1px; border-right: 1px solid var(--lcd-grid); border-bottom: 1px solid var(--lcd-grid); box-sizing: border-box; }
+.ss .scell.sel { background: var(--lcd-fg); color: var(--lcd-bg); }
+.ss .scell.mark { outline: 1px dotted currentColor; outline-offset: -2px; }
+
+/* 一覧（統計結果） */
+.ls { position: absolute; left: 0; top: 8px; width: 192px; height: 56px; font: 10px/10px "KSDotThin", "DotGothic16"; }
+.ls .r { position: absolute; left: 0; right: 4px; height: 10px; white-space: nowrap; }
+.ls .r .a { position: absolute; left: 30px; }
+.ls .r .b { position: absolute; left: 66px; }
+.ls .bar { position: absolute; right: 1px; width: 2px; background: currentColor; }
+
+/* 行列・ベクトルエディター */
+.me { position: absolute; left: 0; top: 8px; width: 192px; height: 56px; font: 10px/10px "KSDotThin", "DotGothic16"; }
+.me .nm { position: absolute; left: 1px; top: 1px; }
+.me .brk { position: absolute; top: 11px; width: 3px; border: 1px solid currentColor; }
+.me .brk.l { border-right: 0; } .me .brk.r { border-left: 0; }
+.me .cell { position: absolute; text-align: right; height: 10px; white-space: nowrap; overflow: hidden; }
+.me .cell.sel { background: var(--lcd-fg); color: var(--lcd-bg); }
+
+/* 周期表 */
+.pt { position: absolute; left: 1px; top: 9px; }
+.pt .e { position: absolute; width: 6px; height: 5px; border: 1px solid currentColor; box-sizing: border-box; }
+.pt .e.sel { background: currentColor; }
+.pt-info { position: absolute; left: 116px; top: 10px; width: 74px; text-align: center; }
+
+.qr { position: absolute; left: 0; top: 0; width: 192px; height: 64px; display: flex; align-items: center; gap: 6px; padding-left: 4px; }
+.qr svg { width: 60px; height: 60px; background: var(--lcd-bg); }
+svg.fig { position: absolute; }
+.fig text { font-family: "KSDotThin", monospace; }
+.out .list { display: flex; flex-direction: column; align-items: flex-end; }
+.out .li { display: flex; align-items: flex-end; }
+.ind svg { margin-top: 0; }

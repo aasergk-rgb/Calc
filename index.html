@@ -9,14 +9,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=DotGothic16&family=Noto+Sans+JP:wght@400;500;700&family=STIX+Two+Text:ital@1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/lcd.css">
 </head>
 <body>
 <main class="stage">
   <div class="fit" id="fit">
     <div class="device" id="device" role="application" aria-label="関数電卓 KS-900JP">
       <div class="lcd-frame">
-        <div class="lcd" id="lcd"><div class="status" id="status"></div><div class="screen" id="screen"></div></div>
+        <div class="lcd-wrap" id="lcdwrap"><div class="lcd" id="lcd"><div id="status"></div><div id="screen"></div></div></div>
         <div class="frame-foot"><b>KS-900JP</b><button type="button" class="help" id="helpBtn" aria-label="使い方を表示">使い方</button></div>
       </div>
       <div class="keys" id="keys"></div>
@@ -29,11 +31,11 @@
     <header><h1 id="helpTitle">KS-900JP の使い方</h1><button type="button" class="close" aria-label="閉じる">✕</button></header>
     <div class="body">
       <p>数学自然表示の関数電卓です。分数・√・π を含む厳密な結果を表示します。メモリーと設定はこの端末のブラウザに保存されます。</p>
-    <h2>計算アプリ（HOME）</h2>
+    <h2>電卓アプリ（HOME）</h2>
     <ul>
-      <li>基本計算・統計計算（回帰7種）・分布計算（7種）・表計算（45行×5列）</li>
-      <li>数表作成・方程式/関数（連立4元・4次・ソルバー）・不等式（4次まで）</li>
-      <li>複素数・n進（32ビット論理演算）・行列（4×4）・ベクトル（3次元）・比例・Math Box</li>
+      <li>基本計算（計算履歴、CALC、真偽判別）・統計（回帰7種）・確率分布（7種）・表計算（45行×5列）</li>
+      <li>数表作成・方程式（連立4元、4次、ソルブ機能）・不等式（4次まで）・複素数</li>
+      <li>n進計算（FORMATで基数切替）・行列（4×4）・ベクトル（3次元）・Math Box（サイコロ、コイントス、数直線、円）</li>
     </ul>
     <h2>主な操作</h2>
     <div class="tbl"><table>
@@ -41,8 +43,8 @@
       <tr><td><b>HOME</b> / <b>SETTINGS</b></td><td>計算アプリの選択 / 各種設定（入力/出力・角度単位・表示桁数 など）</td></tr>
       <tr><td><b>CATALOG</b> / <b>TOOLS</b></td><td>関数・定数・単位換算・周期表 / アプリごとの補助機能</td></tr>
       <tr><td><b>VARIABLE</b></td><td>変数の呼び出し・保存（SHIFT＋4〜6,1〜3,0,.,×10■ で A〜F, x, y, z を直接入力）</td></tr>
-      <tr><td><b>FORMAT</b></td><td>結果の表示形式を変換。SHIFT＋FORMAT（↻）で標準⇔小数</td></tr>
-      <tr><td><b>︽ ︾</b></td><td>メニューのページ送り／計算履歴</td></tr>
+      <tr><td><b>FORMAT</b></td><td>結果の表示形式を変換（標準・小数・素因数分解・循環小数・仮分数/帯分数・エンジニアリング・度分秒）。SHIFT＋FORMAT（↻）で標準⇔小数</td></tr>
+      <tr><td><b>︽ ︾</b></td><td>メニューのページ送り</td></tr>
       <tr><td>SHIFT＋各キー</td><td>x→f(x)　°′″→QR　log→ln　■²→logₐb　■□→■⁻¹　(→=　)→,　Ans→PreAns　7→π　8→∠　9→i　×→e　÷→e^■　+→÷R　−→(−)</td></tr>
     </table></div>
     <h2>キーボード操作</h2>
@@ -56,7 +58,7 @@
       <tr><td><kbd>h</kbd> <kbd>m</kbd> <kbd>k</kbd> <kbd>T</kbd> <kbd>F</kbd> <kbd>v</kbd></td><td>HOME SETTINGS CATALOG TOOLS FORMAT VARIABLE</td></tr>
     </table></div>
     <h2>n進計算</h2>
-    <p>16進数の A〜F は SHIFT＋4,5,6,1,2,3 で入力します。基数は TOOLS で切り替えます。</p>
+    <p>16進数の A〜F は SHIFT＋4,5,6,1,2,3 で入力します。基数は FORMAT キーを押すたびに 10進→16進→2進→8進 と切り替わります。</p>
     </div>
   </div>
 </div>
@@ -70,6 +72,7 @@
 <script src="js/data/constants.js"></script>
 <script src="js/data/units.js"></script>
 <script src="js/data/elements.js"></script>
+<script src="js/lcd.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/apps/basic.js"></script>
 <script src="js/apps/stat.js"></script>

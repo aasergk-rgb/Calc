@@ -142,24 +142,29 @@
   }
   C.Stats = Stats;
 
-  function resultList(title, rows, opts) {
-    // rows: [[label, () => value]]
-    let sel = 0, top = 0; const vis = 5;
+  // ===== 統計値の一覧画面 =====
+  function resultList(rows, opts) {
+    opts = opts || {};
+    let top = 0; const vis = opts.title ? 4 : 5;
+    const ds = Object.assign({}, G.s, { io: 'ld' });
     const ov = {
       render() {
-        if (sel < top) top = sel; if (sel >= top + vis) top = sel - vis + 1;
-        let h = '<div class="menu"><div class="title"><span>' + esc(title) + '</span><span>' + (sel + 1) + '/' + rows.length + '</span></div><div class="result-list">';
+        let h = '<div class="ls">';
+        let y = 1;
+        if (opts.title) { h += '<div class="r" style="top:1px"><span class="a">' + esc(opts.title) + '</span></div>'; y = 11; }
         for (let i = top; i < Math.min(rows.length, top + vis); i++) {
-          let v; try { v = C.fmtValue(rows[i][1](), G.s, { fmt: (opts && opts.exact) ? undefined : 'dec' }).html; } catch (e) { v = '<span class="tk">ERROR</span>'; }
-          h += '<div class="ln' + (i === sel ? ' sel' : '') + '"><span>' + esc(rows[i][0]) + '=</span><span>' + v + '</span></div>';
+          let v; try { v = C.fmtValue(rows[i][1](), ds, { fmt: 'dec' }).html.replace(/<[^>]+>/g, ''); } catch (e) { v = 'ERROR'; }
+          h += '<div class="r" style="top:' + (y + (i - top) * 10) + 'px"><span class="a" style="left:' + (opts.title ? 44 : 30) + 'px">' + esc(rows[i][0]) + '</span><span class="b" style="left:' + (opts.title ? 56 : 66) + 'px">' + (opts.title ? '' : '') + '=' + esc(v) + '</span></div>';
         }
-        return h + '</div></div>';
+        if (rows.length > vis) h += '<div class="bar" style="top:' + (y + Math.round(top / rows.length * 50)) + 'px;height:' + Math.round(50 * vis / rows.length) + 'px"></div>';
+        return h + '</div>';
       },
       key(k) {
-        if (k === 'up') sel = Math.max(0, sel - 1);
-        else if (k === 'down') sel = Math.min(rows.length - 1, sel + 1);
-        else if (k === 'variable') { C.openVariables({ onRecall: () => {}, getValue: () => rows[sel][1]() }); }
-        else if (['back', 'ac', 'ok', 'exe'].includes(k)) { C.pop(ov); if (opts && opts.onClose) opts.onClose(); }
+        if (k === 'up') top = Math.max(0, top - 1);
+        else if (k === 'down') top = Math.min(Math.max(0, rows.length - vis), top + 1);
+        else if (k === 'pgup') top = Math.max(0, top - vis);
+        else if (k === 'pgdn') top = Math.min(Math.max(0, rows.length - vis), top + vis);
+        else if (['back', 'ac', 'ok', 'exe'].includes(k)) { C.pop(ov); if (opts.onClose) opts.onClose(); }
         return true;
       },
     };
@@ -169,131 +174,135 @@
 
   // ===== 統計アプリ =====
   const stat = {
-    id: 'stat', name: '統計計算', short: '統計', icon: '<span style="font-size:14px"><i style="text-decoration:overline">x</i> σ</span>',
+    id: 'stat', name: '統計',
     init() {
       const st = G.appState.stat;
       this.two = st ? st.two : false; this.freq = st ? st.freq : false; this.regType = st ? st.reg : 'lin';
       this.data = st ? st.data : { x: [], y: [], f: [] };
-      this.view = 'editor'; this.cs = null; this.started = !!st;
+      this.view = 'editor'; this.cs = null; this.started = false;
       this.mkGrid();
     },
     persist() { G.appState.stat = { two: this.two, freq: this.freq, reg: this.regType, data: this.data }; C.save(); },
     cols() { const c = ['x']; if (this.two) c.push('y'); if (this.freq) c.push('Freq'); return c; },
     maxRows() { return [160, 80, 53][this.cols().length - 1]; },
+    colKey(c) { const n = this.cols()[c]; return n === 'Freq' ? 'f' : n; },
     mkGrid() {
       const self = this;
-      this.grid = new C.CellGrid({
-        rows: () => self.data.x.length, cols: () => self.cols().length, colLabel: (c) => self.cols()[c], visRows: 5, visCols: 3, growable: true, advance: 'down', padRows: true,
-        get: (r, c) => { const k = self.colKey(c); if (r >= self.data.x.length) return undefined; return k === 'f' ? (self.data.f[r] === undefined ? Q(1) : self.data.f[r]) : self.data[k][r]; },
+      this.grid = new C.TableGrid({
+        rows: () => self.data.x.length, growable: true, maxRows: self.maxRows(), padRows: true,
+        cols: () => self.cols().map((n) => ({ label: n, html: n === 'x' ? '𝑥' : n === 'y' ? '𝑦' : 'Freq', w: 34 })),
+        get: (r, c) => { if (r >= self.data.x.length) return undefined; const k = self.colKey(c); return k === 'f' ? (self.data.f[r] === undefined ? E.Q(1) : self.data.f[r]) : self.data[k][r]; },
         set: (r, c, v) => {
           const k = self.colKey(c);
-          if (r >= self.data.x.length) {
-            if (r >= self.maxRows()) { C.showError(new C.CalcError('Memory')); return; }
-            self.data.x.push(Q(0)); if (self.two) self.data.y.push(Q(0)); self.data.f.push(Q(1));
-          }
+          if (r >= self.data.x.length) { self.data.x.push(E.Q(0)); if (self.two) self.data.y.push(E.Q(0)); self.data.f.push(E.Q(1)); }
           self.data[k][r] = v; self.persist();
         },
         onDel: (r) => { if (r < self.data.x.length) { for (const k of ['x', 'y', 'f']) self.data[k].splice(r, 1); self.persist(); } },
       });
-      this.grid.maxRows = this.maxRows() + 1;
     },
-    colKey(c) { const n = this.cols()[c]; return n === 'Freq' ? 'f' : n; },
-    enter(first) {
-      if (!this.grid) this.init();
-      if (!this.started || !first) this.chooseType();
-    },
+    enter() { if (!this.grid) this.init(); this.chooseType(); },
     chooseType() {
-      C.menu('統計計算', [
-        { label: '1変数統計', action: () => this.setType(false) },
-        { label: '2変数統計', action: () => this.setType(true) },
-      ], { noAC: true });
+      C.menu([
+        { label: '<span class="big">1</span>変数統計', html: true, action: () => this.setType(false) },
+        { label: '<span class="big">2</span>変数統計', html: true, action: () => this.setType(true) },
+      ], { noAC: true, sel: this.two ? 1 : 0, onBack: () => C.openHome() });
     },
     setType(two) {
-      if (two !== this.two || !this.started) this.data = { x: [], y: [], f: [] };
-      this.two = two; this.started = true; this.view = 'editor'; this.mkGrid(); this.persist(); C.popAll();
+      if (two !== this.two) this.data = { x: [], y: [], f: [] };
+      this.two = two; this.view = 'editor'; this.mkGrid(); this.persist(); C.popAll();
     },
     stats() { return Stats(this.data, this.two, this.regType); },
-    results() {
+    oneTwoList() {
       const s = this.stats();
       const L = (k) => [SV[k], () => s.get(k)];
       const one = ['xbar', 'sx', 'sx2', 'varx', 'sdx', 'svarx', 'ssdx', 'n', 'minx', 'q1', 'med', 'q3', 'maxx'];
       const two = ['xbar', 'sx', 'sx2', 'varx', 'sdx', 'svarx', 'ssdx', 'n', 'ybar', 'sy', 'sy2', 'vary', 'sdy', 'svary', 'ssdy', 'sxy', 'sx3', 'sx2y', 'sx4', 'minx', 'maxx', 'miny', 'maxy'];
-      resultList(this.two ? '2変数の計算結果' : '1変数の計算結果', (this.two ? two : one).map(L));
+      resultList((this.two ? two : one).map(L));
+    },
+    regMenu(then) {
+      C.menu(REGS.map(([k, l]) => ({ label: l, big: true, action: () => { this.regType = k; this.persist(); C.popAll(); then(k, l); } })), { sel: Math.max(0, REGS.findIndex((r) => r[0] === this.regType)) });
     },
     regResults() {
-      C.menu('回帰計算', REGS.map(([k, l]) => ({
-        label: l, checked: () => this.regType === k, action: () => {
-          this.regType = k; this.persist(); C.popAll();
-          const s = this.stats();
-          const rows = [['a', () => s.get('a')], ['b', () => s.get('b')]];
-          if (k === 'quad') rows.push(['c', () => s.get('c')]); else rows.push(['r', () => s.get('r')]);
-          resultList(l, rows);
-        },
-      })));
+      this.regMenu((k, l) => {
+        const s = this.stats();
+        const rows = [['a', () => s.get('a')], ['b', () => s.get('b')]];
+        rows.push(k === 'quad' ? ['c', () => s.get('c')] : ['r', () => s.get('r')]);
+        resultList(rows, { title: l });
+      });
     },
     openCalc() {
       this.view = 'calc';
-      if (!this.cs) this.cs = new C.CalcScreen({ mode: 'stat', app: this, extraCtx: () => ({ stats: this.stats() }) });
+      if (!this.cs) {
+        this.cs = new C.CalcScreen({ mode: 'stat', app: this, history: false, extraCtx: () => ({ stats: this.stats() }), catalog: () => this.catalog() });
+        this.cs.emptyLabel = () => '統計計算<br>' + (this.two ? '<span class="big">' + REGS.find((r) => r[0] === this.regType)[1] + '</span>' : '<span class="big">1</span>変数統計');
+      }
     },
-    render() {
-      if (this.view === 'calc') return this.cs.render();
-      return this.grid.render();
+    okMenu() {
+      const items = [{ label: '<span class="big">' + (this.two ? '2' : '1') + '</span>変数統計計算一覧', html: true, action: () => { C.popAll(); this.oneTwoList(); } }];
+      if (this.two) items.push({ label: '回帰計算結果', sub: () => { this.regResults(); return null; } });
+      items.push({ label: '統計計算', sub: this.two ? () => { this.regMenu(() => this.openCalc()); return null; } : undefined, action: this.two ? undefined : () => { C.popAll(); this.openCalc(); } });
+      C.menu(items);
     },
+    render() { return this.view === 'calc' ? this.cs.render() : this.grid.render(); },
     key(k) {
       if (this.view === 'calc') {
-        if (k === 'back' || (k === 'tools')) { if (k === 'back') { this.view = 'editor'; return true; } return false; }
-        if (k === 'S⇔D') { C.sdToggle(this.cs); return true; }
+        if (k === 'tools') return false;
+        if (k === 'back') { this.view = 'editor'; return true; }
         return this.cs.key(k);
       }
       if (this.grid.ed) return this.grid.key(k) || true;
-      if (k === 'ok') {
-        const items = [{ label: this.two ? '2変数の計算結果' : '1変数の計算結果', action: () => { C.popAll(); this.results(); } }];
-        if (this.two) items.push({ label: '回帰計算結果', action: () => this.regResults() });
-        items.push({ label: '統計計算', action: () => { C.popAll(); this.openCalc(); } });
-        C.menu('統計計算', items);
-        return true;
-      }
-      if (k === 'ac') return true;
-      return this.grid.key(k);
+      if (k === 'ok' || k === 'exe') { this.okMenu(); return true; }
+      if (k === 'back') { this.chooseType(); return true; }
+      if (k === 'tools') return false;
+      return this.grid.key(k) || true;
     },
     tools() {
-      if (this.view === 'calc') return [{ label: '統計エディタ', action: () => { C.popAll(); this.view = 'editor'; } }, { label: '元に戻す', action: () => { C.popAll(); this.cs.ed.undo(); } }];
+      if (this.view === 'calc') {
+        const t = [{ label: '<span class="big">' + (this.two ? '2' : '1') + '</span>変数統計計算一覧', html: true, action: () => { C.popAll(); this.oneTwoList(); } }];
+        if (this.two) { t.push({ label: '回帰計算結果', action: () => this.regResults() }); t.push({ label: '回帰式の選択', action: () => this.regMenu(() => this.openCalc()) }); }
+        t.push({ label: '統計エディター', action: () => { C.popAll(); this.view = 'editor'; } });
+        return t;
+      }
+      const yn = (get, set) => [[true, 'する'], [false, 'しない']].map(([v, l]) => ({ label: l, radio: true, checked: () => get() === v, action: () => { set(v); C.popAll(); } }));
       return [
-        { label: '度数', right: () => (this.freq ? 'する' : 'しない'), sub: () => [[true, 'する'], [false, 'しない']].map(([v, l]) => ({ label: l, checked: () => this.freq === v, action: () => { if (this.freq !== v) { this.freq = v; this.data = { x: [], y: [], f: [] }; this.mkGrid(); this.persist(); } C.popAll(); } })) },
-        { label: 'ソート', sub: () => [['x', 1, 'x 昇順'], ['x', -1, 'x 降順']].concat(this.two ? [['y', 1, 'y 昇順'], ['y', -1, 'y 降順']] : []).map(([k, d, l]) => ({ label: l, action: () => { this.sort(k, d); C.popAll(); } })) },
+        { label: '度数表示', sub: () => yn(() => this.freq, (v) => { if (this.freq !== v) { this.freq = v; this.data = { x: [], y: [], f: [] }; this.mkGrid(); this.persist(); } }) },
+        { label: '並べ替え', sub: () => [['x', 1, 'x列の昇順'], ['x', -1, 'x列の降順']].concat(this.two ? [['y', 1, 'y列の昇順'], ['y', -1, 'y列の降順']] : []).concat(this.freq ? [['f', 1, 'Freq列の昇順'], ['f', -1, 'Freq列の降順']] : []).map(([k, d, l]) => ({ label: l, action: () => { this.sort(k, d); C.popAll(); } })) },
         { label: '編集', sub: () => [
-          { label: '行の挿入', action: () => { const r = Math.min(this.grid.r, this.data.x.length); if (this.data.x.length >= this.maxRows()) return; this.data.x.splice(r, 0, Q(0)); if (this.two) this.data.y.splice(r, 0, Q(0)); this.data.f.splice(r, 0, Q(1)); this.persist(); C.popAll(); } },
-          { label: 'すべてのデータを削除', action: () => { this.data = { x: [], y: [], f: [] }; this.grid.r = 0; this.persist(); C.popAll(); } },
+          { label: '行の挿入', action: () => { const r = Math.min(this.grid.r, this.data.x.length); if (this.data.x.length < this.maxRows()) { this.data.x.splice(r, 0, E.Q(0)); if (this.two) this.data.y.splice(r, 0, E.Q(0)); this.data.f.splice(r, 0, E.Q(1)); this.persist(); } C.popAll(); } },
+          { label: 'すべてのデータをクリア', action: () => { this.data = { x: [], y: [], f: [] }; this.grid.r = 0; this.persist(); C.popAll(); } },
         ] },
-        { label: '統計の種類', right: () => (this.two ? '2変数' : '1変数'), action: () => this.chooseType() },
-        { label: '計算結果を表示', action: () => { C.popAll(); this.key('ok'); } },
       ];
     },
     sort(k, d) {
-      const idx = this.data.x.map((_, i) => i).sort((a, b) => d * E.cmp(this.data[k][a], this.data[k][b]));
+      const idx = this.data.x.map((_, i) => i).sort((a, b) => d * E.cmp(this.data[k][a] || E.Q(1), this.data[k][b] || E.Q(1)));
       for (const key of ['x', 'y', 'f']) if (this.data[key].length) this.data[key] = idx.map((i) => this.data[key][i]);
       this.persist();
     },
     catalog() {
-      const T = (k) => ({ label: SV[k], tok: 'sv:' + k });
-      const statCat = () => ['統計', null, () => {
+      const T = (k) => ({ label: SV[k], tok: 'sv:' + k, big: true });
+      const statCat = () => ['統計計算', null, () => {
         const items = [
           { label: '総和', sub: () => (this.two ? ['sx', 'sx2', 'sy', 'sy2', 'sxy', 'sx3', 'sx2y', 'sx4'] : ['sx', 'sx2']).map(T) },
-          { label: '平均/分散/標準偏差', sub: () => (this.two ? ['xbar', 'varx', 'sdx', 'svarx', 'ssdx', 'ybar', 'vary', 'sdy', 'svary', 'ssdy', 'n'] : ['xbar', 'varx', 'sdx', 'svarx', 'ssdx', 'n']).map(T) },
-          { label: '最小値/最大値', sub: () => (this.two ? ['minx', 'maxx', 'miny', 'maxy'] : ['minx', 'q1', 'med', 'q3', 'maxx']).map(T) },
+          { label: '平均/分散/標準偏差...', sub: () => (this.two ? ['xbar', 'varx', 'sdx', 'svarx', 'ssdx', 'ybar', 'vary', 'sdy', 'svary', 'ssdy', 'n'] : ['xbar', 'varx', 'sdx', 'svarx', 'ssdx', 'n']).map(T) },
         ];
-        if (this.two) items.push({ label: '回帰計算', sub: () => (this.regType === 'quad' ? ['a', 'b', 'c'] : ['a', 'b', 'r']).map(T).concat(this.regType === 'quad' ? [{ label: 'x̂₁', tok: 'xh1' }, { label: 'x̂₂', tok: 'xh2' }, { label: 'ŷ', tok: 'yh' }] : [{ label: 'x̂', tok: 'xh' }, { label: 'ŷ', tok: 'yh' }]) });
-        else items.push({ label: '正規分布', sub: () => [{ label: 'P(', tok: 'P(' }, { label: 'Q(', tok: 'Q(' }, { label: 'R(', tok: 'R(' }, { label: '▸t', tok: 't' }] });
+        if (this.two) {
+          items.push({ label: '最小値/最大値', sub: () => ['minx', 'maxx', 'miny', 'maxy'].map(T) });
+          items.push({ label: '回帰計算', sub: () => (this.regType === 'quad' ? ['a', 'b', 'c'] : ['a', 'b', 'r']).map(T).concat(this.regType === 'quad' ? [{ label: 'x̂₁', tok: 'xh1', big: true }, { label: 'x̂₂', tok: 'xh2', big: true }, { label: 'ŷ', tok: 'yh', big: true }] : [{ label: 'x̂', tok: 'xh', big: true }, { label: 'ŷ', tok: 'yh', big: true }]) });
+        } else {
+          items.push({ label: '最小値/最大値/四分位', sub: () => ['minx', 'q1', 'med', 'q3', 'maxx'].map(T) });
+          items.push({ label: '正規分布', sub: () => [{ label: 'P(', tok: 'P(', big: true }, { label: 'Q(', tok: 'Q(', big: true }, { label: 'R(', tok: 'R(', big: true }, { label: '▸t', tok: 't', big: true }] });
+        }
         return items;
       }];
-      return [statCat, CAT.func, CAT.prob, CAT.numeric, CAT.angle, CAT.other];
+      return [statCat, CAT.func, CAT.prob, CAT.numeric, CAT.angle, CAT.hyp, CAT.eng, CAT.const, CAT.unit, CAT.pt, CAT.other];
     },
-    status() { return this.view === 'calc' ? this.cs.status() : (this.two ? '2-VAR' : '1-VAR'); },
+    status() { return this.view === 'calc' ? this.cs.status() : null; },
     editor() { return this.view === 'calc' ? this.cs.ed : this.grid.ed; },
     onIO() { if (this.cs) this.cs.resetMode(); },
     reset() { delete G.appState.stat; this.init(); },
   };
 
+  // ===== 確率分布アプリ =====
   // ===== 分布計算 =====
   const lgam = (z) => { // Lanczos
     const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
@@ -322,12 +331,12 @@
     return x;
   }
   const DISTS = [
-    ['npd', '正規分布の確率密度', [['x', 'x'], ['μ', 'mu'], ['σ', 'sigma']], false],
-    ['ncd', '正規分布の累積分布', [['下端', 'lo'], ['上端', 'hi'], ['μ', 'mu'], ['σ', 'sigma']], false],
-    ['inv', '正規分布の累積分布逆関数', [['面積', 'area'], ['μ', 'mu'], ['σ', 'sigma']], false],
-    ['bpd', '二項分布の確率', [['x', 'x'], ['N', 'N'], ['p', 'p']], true],
+    ['bpd', '二項分布の確率質量', [['x', 'x'], ['N', 'N'], ['p', 'p']], true],
     ['bcd', '二項分布の累積分布', [['x', 'x'], ['N', 'N'], ['p', 'p']], true],
-    ['ppd', 'ポアソン分布の確率', [['x', 'x'], ['λ', 'lam']], true],
+    ['npd', '正規分布の確率密度', [['x', 'x'], ['μ', 'mu'], ['σ', 'sigma']], false],
+    ['ncd', '正規分布の累積分布', [['下限', 'lo'], ['上限', 'hi'], ['μ', 'mu'], ['σ', 'sigma']], false],
+    ['inv', '正規分布の累積分布逆関数', [['P値', 'area'], ['μ', 'mu'], ['σ', 'sigma']], false],
+    ['ppd', 'ポアソン分布の確率質量', [['x', 'x'], ['λ', 'lam']], true],
     ['pcd', 'ポアソン分布の累積分布', [['x', 'x'], ['λ', 'lam']], true],
   ];
   const DEFP = { x: 0, mu: 0, sigma: 1, lo: -1e99, hi: 1e99, area: 0.5, N: 1, p: 0.5, lam: 1 };
@@ -356,86 +365,82 @@
     return Number(r.toPrecision(10));
   }
   C.distCalc = distCalc;
-
   const dist = {
-    id: 'dist', name: '分布計算', short: '分布', icon: '<span style="font-size:13px">∫N(μ)</span>',
-    init() { const st = G.appState.dist || {}; this.type = st.type || 'npd'; this.params = st.params || {}; this.list = (st.list || []).map((x) => x); this.useList = !!st.useList; this.view = 'menu'; this.res = null; this.listRes = null; },
+    id: 'dist', name: '確率分布',
+    init() { const st = G.appState.dist || {}; this.type = st.type || 'bpd'; this.params = st.params || {}; this.list = st.list || []; this.useList = !!st.useList; this.view = 'menu'; this.res = null; this.listRes = null; },
     persist() { G.appState.dist = { type: this.type, params: this.params, list: this.list, useList: this.useList }; C.save(); },
-    enter() { if (!this.view) this.init(); this.chooseType(); },
+    enter() { if (!this.view) this.init(); this.list = []; this.listRes = null; this.chooseType(); },
     def() { return DISTS.find((d) => d[0] === this.type); },
     chooseType() {
-      C.menu('分布計算', DISTS.map(([k, l, , listable]) => ({
-        label: l, action: () => {
-          this.type = k; this.res = null; this.listRes = null; this.persist();
-          if (listable) C.menu(l, [{ label: 'リスト', action: () => { this.useList = true; C.popAll(); this.openList(); } }, { label: '変数', action: () => { this.useList = false; C.popAll(); this.openForm(); } }]);
-          else { this.useList = false; C.popAll(); this.openForm(); }
-        },
-      })), { noAC: true, sel: Math.max(0, DISTS.findIndex((d) => d[0] === this.type)) });
+      this.view = 'menu';
+      C.menu(DISTS.map(([k, l, , listable]) => {
+        const pick = (useList) => { this.type = k; this.useList = useList; this.res = null; this.listRes = null; this.persist(); C.popAll(); if (useList) this.openList(); else this.openForm(); };
+        return listable
+          ? { label: l, sub: () => [{ label: '一括計算(リストデータ)', action: () => pick(true) }, { label: '単一計算(1つのデータ)', action: () => pick(false) }] }
+          : { label: l, action: () => pick(false) };
+      }), { noAC: true, sel: Math.max(0, DISTS.findIndex((d) => d[0] === this.type)), onBack: () => C.openHome() });
     },
     openForm() {
       const [, title, fields] = this.def();
       const fl = fields.filter((f) => !(this.useList && f[1] === 'x'));
       this.view = 'form';
+      const val = (key) => (this.params[key] !== undefined ? this.params[key] : DEFP[key]);
       this.form = new C.Form({
-        title, btn: '実行', fields: fl.map(([lab, key]) => ({ label: lab, value: this.params[key] !== undefined ? E.fromDecimal(String(this.params[key]).replace('e', 'E').replace('+', '')) : E.fromDecimal(String(DEFP[key]).replace('e+', 'E').replace('e', 'E')), key })),
+        title, vx: 64, fields: fl.map(([lab, key]) => ({ label: lab, big: /^[A-Za-zμσλ]/.test(lab), value: E.fromDecimal(String(val(key)).replace('e+', 'E').replace('e', 'E')), key })),
         onSubmit: (vals) => {
-          fl.forEach(([, key], i) => { this.params[key] = num(vals[i]); });
+          fl.forEach(([, key], i) => { this.params[key] = E.toNum(vals[i]); });
           this.persist();
           try {
-            if (this.useList) {
-              this.listRes = this.list.map((x) => { try { return distCalc(this.type, Object.assign({}, this.params, { x: num(x) })); } catch (e) { return 'ERROR'; } });
-              this.view = 'list';
-            } else { this.res = distCalc(this.type, this.params); G.ans = this.res; this.view = 'res'; C.save(); }
+            if (this.useList) { this.listRes = this.list.map((x) => { try { return distCalc(this.type, Object.assign({}, this.params, { x: E.toNum(x) })); } catch (e) { return 'ERROR'; } }); this.view = 'list'; this.grid.c = 1; }
+            else { this.res = distCalc(this.type, this.params); G.ans = this.res; this.view = 'res'; C.save(); }
           } catch (e) { C.showError(e); }
         },
+        onBack: () => { if (this.useList) this.view = 'list'; else this.chooseType(); },
       });
     },
     openList() {
       const self = this; this.view = 'list'; this.listRes = null;
-      this.grid = new C.CellGrid({
-        rows: () => self.list.length, cols: 2, colLabel: (c) => (c ? 'P' : 'x'), visRows: 4, visCols: 2, growable: true, advance: 'down', maxRows: 46, padRows: true,
-        get: (r, c) => (c === 0 ? self.list[r] : self.listRes ? (typeof self.listRes[r] === 'number' ? self.listRes[r] : undefined) : undefined),
-        cellText(r, c) { if (c === 1 && self.listRes && self.listRes[r] === 'ERROR') return 'ERROR'; const v = this.get(r, c); return v === undefined ? '' : C.shortText(v, G.s, 9); },
-        set: (r, c, v) => { if (c !== 0) return; if (r >= 45) { C.showError(new C.CalcError('Memory')); return; } if (r >= self.list.length) self.list.push(v); else self.list[r] = v; self.listRes = null; self.persist(); },
+      const t = this.def()[1];
+      this.grid = new C.TableGrid({
+        rows: () => self.list.length, growable: true, maxRows: 45, padRows: true,
+        cols: () => [{ label: 'x', html: '𝑥', w: 36 }, { label: 'P', w: 40 }],
+        side: () => esc(t.slice(0, 5)) + '<br>' + esc(t.slice(5)),
+        get: (r, c) => (c === 0 ? self.list[r] : self.listRes ? self.listRes[r] : undefined),
+        set: (r, c, v) => { if (c !== 0) return; if (r >= self.list.length) self.list.push(v); else self.list[r] = v; self.listRes = null; self.persist(); },
         canEdit: (r, c) => c === 0,
         onDel: (r) => { self.list.splice(r, 1); self.listRes = null; self.persist(); },
       });
     },
     render() {
-      const def = this.def();
       if (this.view === 'res') {
         const lab = this.type === 'inv' ? 'xInv=' : 'p=';
-        return '<div class="calc"><div class="input lbl-sm">' + esc(def[1]) + '</div><div class="output"><span class="tk">' + lab + '</span>' + C.fmtValue(this.res, G.s, {}).html + '</div></div>';
+        return '<div class="calc"><div class="in fb">' + lab + '</div><div class="out">' + C.fmtValue(this.res, G.s, { fmt: 'dec' }).html + '</div></div>';
       }
       if (this.view === 'form' && this.form) return this.form.render();
-      if (this.view === 'list' && this.grid) return '<div class="lbl-sm">' + esc(def[1]) + '</div>' + this.grid.render();
+      if (this.view === 'list' && this.grid) return this.grid.render();
       return '';
     },
     key(k) {
       if (k === 'tools') return false;
       if (this.view === 'res') {
-        if (k === 'variable') { C.openVariables({ onRecall: () => {}, getValue: () => this.res }); return true; }
+        if (k === 'variable') { C.openVariables({ getValue: () => this.res }); return true; }
         if (['exe', 'ok', 'back', 'ac'].includes(k)) { this.openForm(); return true; }
         return true;
       }
-      if (this.view === 'form') {
-        if (k === 'back') { if (this.useList) { this.openList(); return true; } this.chooseType(); return true; }
-        this.form.key(k); return true;
-      }
+      if (this.view === 'form') { this.form.key(k); return true; }
       if (this.view === 'list') {
-        if (!this.grid.ed && (k === 'ok' || k === 'exe' && this.grid.r >= this.list.length)) { this.openForm(); return true; }
+        if (!this.grid.ed && (k === 'ok' || (k === 'exe' && this.grid.r >= this.list.length))) { if (!this.list.length) return true; this.openForm(); return true; }
         if (!this.grid.ed && k === 'back') { this.chooseType(); return true; }
-        if (!this.grid.ed && k === 'variable') { const v = this.grid.get(this.grid.r, this.grid.c); C.openVariables({ onRecall: () => {}, getValue: () => v }); return true; }
+        if (!this.grid.ed && this.listRes && C.INPUT_KEYS.test(k)) this.listRes = null;
         return this.grid.key(k) || true;
       }
       return true;
     },
     tools() {
-      const t = [{ label: '分布の種類', action: () => this.chooseType() }];
-      if (this.view === 'list') t.push({ label: '編集', sub: () => [{ label: '行の挿入', action: () => { if (this.list.length < 45) { this.list.splice(this.grid.r, 0, Q(0)); this.listRes = null; this.persist(); } C.popAll(); } }, { label: 'すべてのデータを削除', action: () => { this.list = []; this.listRes = null; this.persist(); C.popAll(); } }] });
-      return t;
+      if (this.view === 'list') return [{ label: '編集', sub: () => [{ label: '行の挿入', action: () => { if (this.list.length < 45) { this.list.splice(this.grid.r, 0, E.Q(0)); this.listRes = null; this.persist(); } C.popAll(); } }, { label: 'すべてのデータをクリア', action: () => { this.list = []; this.listRes = null; this.persist(); C.popAll(); } }] }];
+      return [];
     },
-    status() { return ''; },
+    status() { return null; },
     editor() { return this.form && this.view === 'form' ? (this.form.fields[this.form.sel] || {}).ed : null; },
     reset() { delete G.appState.dist; this.init(); },
   };

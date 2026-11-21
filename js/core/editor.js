@@ -44,6 +44,11 @@
     return t;
   };
   const SUPS = { '²': '2', '³': '3', '⁻¹': '−1' };
+  // 根号（内容の高さに合わせて伸縮する）
+  C.RAD = '<svg class="rad" viewBox="0 0 7 20" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11.5 L1.6 10.5 L3.6 19.5 L6.6 0.5 L7 0.5" fill="none" stroke="currentColor" stroke-width="1.1" vector-effect="non-scaling-stroke" stroke-linejoin="miter"/></svg>';
+  // 液晶上の文字（変数などは数式用イタリック）
+  const ITAL = { x: '𝑥', y: '𝑦', z: '𝑧', e: '𝑒', i: '𝑖' };
+  C.lcdText = function (t) { return ITAL[t] || C.tokenText(t); };
 
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   C.esc = esc;
@@ -220,23 +225,23 @@
   function renderEl(el, cur, mode, row, i) {
     if (typeof el === 'string') {
       if (mode === 'math' && SUPS[el]) return '<span class="sup">' + SUPS[el] + '</span>';
-      const t = C.tokenText(el);
-      const cls = /^[0-9.]$/.test(el) ? 'tk d' : 'tk';
-      return '<span class="' + cls + '">' + esc(t) + '</span>';
+      if (el === 'E') return '<span class="x10">×10</span>';
+      const t = C.lcdText(el);
+      return '<span class="tk">' + esc(t) + '</span>';
     }
     const R = (f) => renderRow(el[f], cur, mode, false);
     switch (el.k) {
       case 'frac': return '<span class="frac"><span class="num">' + R('a') + '</span><span class="den">' + R('b') + '</span></span>';
       case 'mixed': return '<span class="mixed">' + R('w') + '<span class="frac"><span class="num">' + R('a') + '</span><span class="den">' + R('b') + '</span></span></span>';
-      case 'sqrt': return '<span class="sqrt"><span class="rad">√</span><span class="rc">' + R('a') + '</span></span>';
-      case 'root': return '<span class="sqrt"><span class="idx">' + R('n') + '</span><span class="rad">√</span><span class="rc">' + R('a') + '</span></span>';
+      case 'sqrt': return '<span class="sqrt">' + C.RAD + '<span class="rc">' + R('a') + '</span></span>';
+      case 'root': return '<span class="sqrt"><span class="idx">' + R('n') + '</span>' + C.RAD + '<span class="rc">' + R('a') + '</span></span>';
       case 'pow': return '<span class="sup">' + R('e') + '</span>';
       case 'logb': return '<span class="tk">log</span><span class="sub">' + R('b') + '</span><span class="paren">(</span>' + R('a') + '<span class="paren">)</span>';
       case 'abs': return '<span class="abs">' + R('a') + '</span>';
-      case 'integ': return '<span class="bigop"><span class="lim hi">' + R('hi') + '</span><span class="sym int">∫</span><span class="lim lo">' + R('lo') + '</span></span>' + R('a') + '<span class="tk">dx</span>';
-      case 'deriv': return '<span class="frac sm"><span class="num"><span class="tk">d</span></span><span class="den"><span class="tk">dx</span></span></span><span class="paren">(</span>' + R('a') + '<span class="paren">)</span><span class="evalat"><span class="bar"></span><span class="sub"><span class="tk">x=</span>' + R('at') + '</span></span>';
-      case 'sum': case 'prod': return '<span class="bigop"><span class="lim hi">' + R('hi') + '</span><span class="sym">' + (el.k === 'sum' ? 'Σ' : '∏') + '</span><span class="lim lo"><span class="tk">x=</span>' + R('lo') + '</span></span><span class="paren">(</span>' + R('a') + '<span class="paren">)</span>';
-      case 'recur': return '<span class="recur">' + R('a') + '</span>';
+      case 'integ': return '<span class="bigop"><span class="lim hi">' + R('hi') + '</span><span class="sym int">∫</span><span class="lim lo">' + R('lo') + '</span></span>' + R('a') + '<span class="tk">d𝑥</span>';
+      case 'deriv': return '<span class="frac sm"><span class="num"><span class="tk">d</span></span><span class="den"><span class="tk">d𝑥</span></span></span><span class="paren">(</span>' + R('a') + '<span class="paren">)</span><span class="evalat"><span class="bar"></span><span class="sub"><span class="tk">𝑥=</span>' + R('at') + '</span></span>';
+      case 'sum': case 'prod': return '<span class="bigop"><span class="lim hi">' + R('hi') + '</span><span class="sym">' + (el.k === 'sum' ? 'Σ' : '∏') + '</span><span class="lim lo"><span class="tk">𝑥=</span>' + R('lo') + '</span></span><span class="paren">(</span>' + R('a') + '<span class="paren">)</span>';
+      case 'recur': return '<span class="recur"><span class="dot" style="left:4px"></span><span class="dot" style="right:4px"></span>' + R('a') + '</span>';
     }
     return '';
   }

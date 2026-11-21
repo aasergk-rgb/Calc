@@ -619,8 +619,14 @@
         return bin(n.op, a, b, ctx, n);
       }
       case 'rel': {
-        const a = ev(n.a, ctx), b = ev(n.b, ctx);
-        return { k: 'bool', v: rel(n.op, a, b) };
+        const vals = n.terms.map((t) => ev(t, ctx));
+        let ok = true;
+        for (let i = 0; i < n.ops.length; i++) {
+          const a = vals[i], b = vals[i + 1];
+          if (V.isCx(a) || V.isCx(b)) { if (n.ops[i] !== '=' && n.ops[i] !== '≠') throw Err('Math'); const d = V.sub(a, b); const z = Math.abs(num(V.cplx(d).re)) < 1e-10 && Math.abs(num(V.cplx(d).im)) < 1e-10; if ((n.ops[i] === '=') !== z) ok = false; continue; }
+          if (!rel(n.ops[i], a, b)) ok = false;
+        }
+        return { k: 'bool', v: ok };
       }
       case 'post': { const a = ev(n.a, ctx); return post(n.op, a, ctx); }
       case 'pow': { const a = ev(n.a, ctx), b = ev(n.b, ctx); return powV(a, b, ctx); }

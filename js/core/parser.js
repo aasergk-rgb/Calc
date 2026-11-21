@@ -34,17 +34,18 @@
     parseBin(level) {
       if (level > 6) return this.parseImp();
       let a = this.parseBin(level + 1);
+      if (level === 0) { // 関係演算子（連鎖可: 1≤1<2 など）
+        const ops = [], terms = [a];
+        while (typeof this.peek() === 'string' && BIN_LEVEL[this.peek()] === 0) { ops.push(this.next()); terms.push(this.parseBin(1)); }
+        if (!ops.length) return a;
+        const up = ops.some((o) => o === '<' || o === '≤'), down = ops.some((o) => o === '>' || o === '≥');
+        if ((up && down) || (ops.includes('≠') && (up || down))) throw Err();
+        return { t: 'rel', ops, terms };
+      }
       for (;;) {
         const t = this.peek();
-        if (typeof t === 'string' && BIN_LEVEL[t] === level) {
-          this.next();
-          const b = this.parseBin(level + 1);
-          if (level === 0) a = { t: 'rel', op: t, a, b };
-          else a = { t: 'bin', op: t, a, b };
-          if (level === 0) { // 連続関係式は不可
-            const t2 = this.peek(); if (typeof t2 === 'string' && BIN_LEVEL[t2] === 0) throw Err();
-          }
-        } else break;
+        if (typeof t === 'string' && BIN_LEVEL[t] === level) { this.next(); const b = this.parseBin(level + 1); a = { t: 'bin', op: t, a, b }; }
+        else break;
       }
       return a;
     }

@@ -1,7 +1,7 @@
-/* 計算アプリの登録（HOME 画面の並び順） */
+/* 計算アプリの登録（HOME 画面の並び順: 取扱説明書の電卓アプリ一覧どおり） */
 (function (C) {
   'use strict';
   const L = C.lateApps;
   // 基本計算は basic.js で先頭に登録済み
-  C.APPS.push(L.stat, L.dist, L.sheet, L.table, L.eq, L.ineq, L.cplx, L.base, L.matrix, L.vector, L.ratio, L.mbox);
+  C.APPS.push(L.stat, L.dist, L.sheet, L.table, L.eq, L.ineq, L.cplx, L.base, L.matrix, L.vector, L.mbox);
 })(window.C = window.C || {});

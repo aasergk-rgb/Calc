@@ -40,7 +40,7 @@
   }
 
   const sheet = {
-    id: 'sheet', name: '表計算', short: '表計算', icon: '<span style="font-size:16px">▦</span>',
+    id: 'sheet', name: '表計算',
     init() {
       const st = G.appState.sheet;
       this.cells = st ? st.cells : Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -115,40 +115,43 @@
       if (cell.kind === 'f') return ['='].concat(cell.src);
       return C.valueToTokens(cell.v);
     },
-    // ---- 描画 ----
+    // ---- 描画（表計算画面） ----
     render() {
-      const visR = 5, visC = 3;
+      const visR = 4, visC = 4, CW = 43, RW = 13;
       const cr = this.grab ? this.grab.r : this.r, cc = this.grab ? this.grab.c : this.c;
       if (cr < this.top) this.top = cr; if (cr >= this.top + visR) this.top = cr - visR + 1;
       if (cc < this.left) this.left = cc; if (cc >= this.left + visC) this.left = cc - visC + 1;
-      let h = '<table class="grid"><tr><th class="rh"></th>';
-      for (let c = this.left; c < this.left + visC; c++) h += '<th>' + colName(c) + '</th>';
-      h += '</tr>';
+      let h = '<div class="tb ss">';
+      for (let c = this.left; c < this.left + visC; c++) {
+        const x = RW + 1 + (c - this.left) * (CW + 1);
+        h += '<div class="hcell' + (c === cc ? ' on' : '') + '" style="left:' + x + 'px;width:' + CW + 'px">' + colName(c) + '</div>';
+      }
       for (let r = this.top; r < this.top + visR; r++) {
-        h += '<tr><th class="rh">' + (r + 1) + '</th>';
+        const y = 10 + (r - this.top) * 10;
+        h += '<div class="rcell' + (r === cr ? ' on' : '') + '" style="top:' + y + 'px">' + (r + 1) + '</div>';
         for (let c = this.left; c < this.left + visC; c++) {
           const v = this.vals[r][c];
-          const t = v === undefined ? '' : v === 'ERROR' ? 'ERROR' : C.shortText(v, G.s, 9);
-          const sel = r === cr && c === cc;
+          const t = v === undefined ? '' : v === 'ERROR' ? 'ERROR' : C.shortText(v, G.s, 7);
+          const x = RW + 1 + (c - this.left) * (CW + 1);
           const mark = this.clip && this.clip.r === r && this.clip.c === c;
-          h += '<td class="' + (sel ? 'sel' : '') + (mark ? ' mark' : '') + '">' + esc(t) + '</td>';
+          h += '<div class="scell' + (r === cr && c === cc ? ' sel' : '') + (mark ? ' mark' : '') + '" style="left:' + x + 'px;top:' + y + 'px;width:' + (CW + 1) + 'px">' + esc(t) + '</div>';
         }
-        h += '</tr>';
       }
-      h += '</table>';
-      let box;
-      if (this.grab) box = '<span class="tk">参照: ' + colName(this.grab.c) + (this.grab.r + 1) + '</span>';
-      else if (this.ed) box = this.ed.render(true);
+      if (this.grab) h += '<div class="msg">決定:<span class="fb">[OK]</span></div>';
+      else if (this.ed) h += '<div class="edit" style="background:var(--lcd-bg)">' + this.ed.render(true) + '</div>';
+      else if (this.clip) h += '<div class="msg">貼り付け:<span class="fb">[OK]</span></div>';
       else {
         const cell = this.cells[this.r][this.c];
-        if (!cell) box = '';
-        else if (cell.kind === 'f' && !this.showVal) box = C.renderRow(['='].concat(cell.src), null, 'line', true);
-        else { const v = this.vals[this.r][this.c]; box = v === 'ERROR' ? '<span class="tk">ERROR</span>' : C.fmtValue(v, G.s, {}).html; }
+        if (cell) {
+          let box;
+          if (cell.kind === 'f' && !this.showVal) box = C.renderRow(['='].concat(cell.src), null, 'line', true);
+          else { const v = this.vals[this.r][this.c]; box = v === 'ERROR' ? '<span class="tk">ERROR</span>' : C.fmtValue(v, Object.assign({}, G.s, { io: 'ld' }), {}).html; }
+          h += '<div class="val">' + box + '</div>';
+        }
       }
-      h += '<div class="editbox' + (this.ed || this.grab ? ' editing' : '') + '"><span class="tk" style="margin-right:6px">' + colName(this.c) + (this.r + 1) + '</span>' + box + '</div>';
-      return h;
+      return h + '</div>';
     },
-    status() { return this.clip ? (this.clip.cut ? '切り取り' : 'コピー') : ''; },
+    status() { return null; },
     editor() { return this.ed; },
     // ---- キー ----
     key(k) {
@@ -190,9 +193,8 @@
       return true;
     },
     openCat() {
-      const sheetCat = () => ['表計算', [{ label: 'Min( 最小値', tok: 'Min(' }, { label: 'Max( 最大値', tok: 'Max(' }, { label: 'Mean( 平均値', tok: 'Mean(' }, { label: 'Sum( 総和', tok: 'Sum(' }, { label: ': 範囲', tok: ':' }, { label: '$ 絶対参照', tok: '$' }, { label: '= 数式', tok: '=' }]];
-      const grabCat = () => ['参照するセルの選択', null, () => [{ label: '参照するセルの選択', action: () => { this.grab = { r: this.r, c: this.c }; } }]];
-      C.openCatalog([sheetCat, grabCat, CAT.prob, CAT.numeric, CAT.angle, CAT.hyp, CAT.const, CAT.other], this.ed);
+      const sheetCat = () => ['表計算', null, () => [{ label: '最小値', tok: 'Min(' }, { label: '最大値', tok: 'Max(' }, { label: '平均値', tok: 'Mean(' }, { label: '総和', tok: 'Sum(' }, { label: ':', tok: ':', big: true }, { label: '$', tok: '$', big: true }, { label: '参照するセルの選択', action: () => { this.grab = { r: this.r, c: this.c }; } }]];
+      C.openCatalog([sheetCat, CAT.func, CAT.prob, CAT.numeric, CAT.angle, CAT.hyp, CAT.eng, CAT.const, CAT.unit, CAT.pt, CAT.other], this.ed);
     },
     paste() {
       const { r: sr, c: sc, cell, cut } = this.clip;
@@ -215,9 +217,10 @@
       let sel = 0;
       const ov = {
         render() {
-          return '<div class="menu form"><div class="title"><span>' + (asFormula ? '一括入力(数式)' : '一括入力(値)') + '</span><span></span></div><div class="items">' +
-            ['' + (asFormula ? '数式' : '値'), '範囲'].map((lb, i) => '<div class="fld' + (i === sel ? ' sel' : '') + '"><span class="lb">' + lb + '</span><span class="vl">' + (asFormula && i === 0 ? '<span class="tk">=</span>' : '') + eds[i].render(i === sel) + '</span></div>').join('') +
-            '<div class="fld btn' + (sel === 2 ? ' sel' : '') + '">確定</div></div></div>';
+          const row = (i, lb, inner) => '<div class="fr' + (i === sel ? ' sel' : '') + '" style="top:' + (14 + i * 14) + 'px"><span class="lb">' + lb + '</span><span class="vl"><span class="tk">:</span>' + inner + '</span></div>';
+          return '<div class="fm" style="--vx:56px"><div class="title">' + (asFormula ? '一括入力(数式)' : '一括入力(値)') + '</div>' +
+            row(0, asFormula ? '数式' : '値', (asFormula ? '<span class="tk">=</span>' : '') + eds[0].render(sel === 0)) + row(1, '範囲', eds[1].render(sel === 1)) +
+            '<div class="fr' + (sel === 2 ? ' sel' : '') + '" style="top:42px;right:1px">' + C.IC.play + '<span style="margin-left:1px">確定する</span></div></div>';
         },
         key(k) {
           if (k === 'up') { sel = (sel + 2) % 3; return true; }
@@ -250,7 +253,7 @@
       C.push(ov);
     },
     tools() {
-      const yn = (get, set, a, b) => [[true, a], [false, b]].map(([v, l]) => ({ label: l, checked: () => get() === v, action: () => { set(v); this.persist(); C.popAll(); } }));
+      const yn = (get, set, a, b) => [[true, a], [false, b]].map(([v, l]) => ({ label: l, radio: true, checked: () => get() === v, action: () => { set(v); this.persist(); C.popAll(); } }));
       return [
         { label: '一括入力(数式)', action: () => { C.popAll(); this.fill(true); } },
         { label: '一括入力(値)', action: () => { C.popAll(); this.fill(false); } },
@@ -258,10 +261,10 @@
         { label: '切り取り&貼り付け', action: () => { this.clip = { r: this.r, c: this.c, cell: this.cells[this.r][this.c], cut: true }; C.popAll(); } },
         { label: 'コピー&貼り付け', action: () => { this.clip = { r: this.r, c: this.c, cell: this.cells[this.r][this.c], cut: false }; C.popAll(); } },
         { label: '再計算', action: () => { C.popAll(); const e = this.recalc(); if (e) C.showError(e); } },
-        { label: '自動計算', right: () => (this.auto ? 'する' : 'しない'), sub: () => yn(() => this.auto, (v) => { this.auto = v; if (v) this.recalc(); }, 'する', 'しない') },
-        { label: 'セル表示', right: () => (this.showVal ? '値' : '数式'), sub: () => yn(() => this.showVal, (v) => { this.showVal = v; }, '値', '数式') },
-        { label: 'すべて削除', action: () => C.confirm('すべて削除', 'すべてのデータを削除しますか？', () => { this.cells = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); this.afterChange(); }) },
-        { label: '空き容量', action: () => { C.popAll(); C.push(new C.Msg({ title: '空き容量', text: (CAP - this.bytes()) + ' バイト', hint: '[OK]' })); } },
+        { label: '自動計算', sub: () => yn(() => this.auto, (v) => { this.auto = v; if (v) this.recalc(); }, 'する', 'しない') },
+        { label: 'エディットボックス表示', sub: () => yn(() => this.showVal, (v) => { this.showVal = v; }, '値', '数式') },
+        { label: 'すべてのデータをクリア', action: () => { this.cells = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); this.afterChange(); C.popAll(); } },
+        { label: '空き容量表示', action: () => { C.popAll(); C.info('空き容量: ' + (CAP - this.bytes()) + 'バイト'); } },
       ];
     },
   };

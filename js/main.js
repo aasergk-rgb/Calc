@@ -76,15 +76,13 @@
     const vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
     const full = vw < 560 && vh / vw > 1.35;   // スマホ縦持ち
     document.body.classList.toggle('full', full);
-    dev.style.height = ''; dev.style.setProperty('--lcd-h', '150px');
+    dev.style.height = '';
     const w = dev.offsetWidth, natural = dev.offsetHeight;
     let sc;
     if (full) {
       sc = vw / w;
       const designH = vh / sc;
       if (designH >= natural) {
-        const extra = designH - natural;
-        dev.style.setProperty('--lcd-h', Math.round(150 + Math.min(46, extra * 0.4)) + 'px');
         dev.style.height = designH + 'px';
       } else sc = vh / natural;
       box.style.width = vw + 'px';
@@ -98,6 +96,8 @@
     }
     dev.style.transform = 'scale(' + sc + ')';
     box.style.height = dev.offsetHeight * sc + 'px';
+    const wrap = document.getElementById('lcdwrap');
+    if (wrap) document.getElementById('lcd').style.setProperty('--lcd-s', wrap.offsetWidth / 192);
   }
   C.fit = fit;
 
@@ -111,136 +111,141 @@
   };
   C.activeEditor = () => (G.app && G.app.editor ? G.app.editor() : null);
 
-  // ===== HOME =====
+  // ===== HOME（3列×2行のアイコン） =====
   let homeSel = 0, homeTop = 0;
   const HomeOv = {
+    noStatus: true,
     render() {
-      const cols = 4, rowsVis = 3;
-      const row = Math.floor(homeSel / cols);
-      if (row < homeTop) homeTop = row; if (row >= homeTop + rowsVis) homeTop = row - rowsVis + 1;
+      const cols = 3, rows = Math.ceil(C.APPS.length / cols);
+      const r = Math.floor(homeSel / cols);
+      if (r < homeTop) homeTop = r; if (r >= homeTop + 2) homeTop = r - 1;
       let h = '<div class="home">';
       C.APPS.forEach((a, i) => {
-        const r = Math.floor(i / cols); if (r < homeTop || r >= homeTop + rowsVis) return;
-        h += '<div class="app' + (i === homeSel ? ' sel' : '') + '"><div class="ic">' + a.icon + '</div></div>';
+        const rr = Math.floor(i / cols); if (rr < homeTop || rr > homeTop + 1) return;
+        h += '<div class="app' + (i === homeSel ? ' sel' : '') + '" style="left:' + ((i % cols) * 63) + 'px;top:' + ((rr - homeTop) * 32) + 'px">' + C.appIcon(a.id) + '<span class="nm">' + esc(a.name) + '</span></div>';
       });
-      h += '</div><div class="home-name">' + esc(C.APPS[homeSel].name) + '</div>';
+      h += '</div><div class="mn"><div class="bar" style="top:' + Math.round(homeTop / rows * 64) + 'px;height:' + Math.round(64 * 2 / rows) + 'px"></div></div>';
       return h;
     },
     key(k) {
       const n = C.APPS.length;
       if (k === 'left') homeSel = (homeSel - 1 + n) % n;
       else if (k === 'right') homeSel = (homeSel + 1) % n;
-      else if (k === 'up') homeSel = homeSel - 4 >= 0 ? homeSel - 4 : homeSel;
-      else if (k === 'down') homeSel = Math.min(n - 1, homeSel + 4);
-      else if (k === 'ok' || k === 'exe') { const a = C.APPS[homeSel]; C.switchApp(a.id); }
-      else if (k === 'back' || k === 'home' || k === 'ac') C.pop(HomeOv);
-      else if (k === 'settings') { C.pop(HomeOv); openSettings(); }
+      else if (k === 'up') homeSel = homeSel - 3 >= 0 ? homeSel - 3 : homeSel;
+      else if (k === 'down') homeSel = Math.min(n - 1, homeSel + 3);
+      else if (k === 'pgup') homeSel = Math.max(0, homeSel - 6);
+      else if (k === 'pgdn') homeSel = Math.min(n - 1, homeSel + 6);
+      else if (k === 'ok' || k === 'exe') { const a = C.APPS[homeSel]; G.verify = G.verify && a === G.app; C.switchApp(a.id); }
+      else if (k === 'back' || k === 'home') C.pop(HomeOv);
+      else if (k === 'settings') openGetStarted();
       return true;
     },
-    status: () => '',
   };
   function openHome() { G.ov.length = 0; homeSel = Math.max(0, C.APPS.indexOf(G.app)); C.push(HomeOv); }
-
-  // ===== 設定 =====
-  function opt(label, getter, setter, choices) {
-    return {
-      label, right: () => { const v = getter(); const c = choices.find((x) => JSON.stringify(x[0]) === JSON.stringify(v)); return c ? c[2] || c[1] : ''; },
-      sub: () => new C.Menu({ title: label, sel: Math.max(0, choices.findIndex((x) => JSON.stringify(x[0]) === JSON.stringify(getter()))), items: choices.map(([v, l]) => ({ label: l, checked: () => JSON.stringify(getter()) === JSON.stringify(v), action: (m) => { setter(v); C.save(); C.pop(m); C.onSettingsChanged(); } })) }),
-    };
+  function openGetStarted() {
+    C.push(new C.Msg({ html: '<div class="fj" style="line-height:13px;text-align:left;padding:0 3px">KS-900JP<br>数学自然表示の関数電卓です。<br>使い方は画面下の「使い方」へ</div>', onKey: () => false }));
   }
-  const S = G.s;
+
+  // ===== SETTINGS（取扱説明書のメニュー構成・ラジオボタン） =====
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  function radios(get, set, choices, after) {
+    return choices.map(([v, l]) => ({ label: l, radio: true, checked: () => same(get(), v), action: (m) => { set(v); C.save(); if (after) after(); C.onSettingsChanged(); C.pop(m); } }));
+  }
   function openSettings() {
     const s = G.s;
-    const set = (k) => (v) => { s[k] = v; };
-    const get = (k) => () => s[k];
-    const digitMenu = (type, title) => ({
-      label: title, sub: () => new C.Menu({ title, items: Array.from({ length: 10 }, (_, i) => ({ label: type === 'sci' && i === 0 ? '10' : String(i), action: () => { s.numFmt = { type, n: i }; C.save(); C.popAll(); C.onSettingsChanged(); } })) }),
-    });
-    C.menu('設定', [
-      { label: '計算設定', sub: () => [
-        opt('入力/出力', get('io'), (v) => { s.io = v; C.onIOChanged(); }, [['mm', '数学自然表示入出力', 'MathI/MathO'], ['md', '数学自然表示入力/小数出力', 'MathI/DecO'], ['ll', 'ライン表示入出力', 'LineI/LineO'], ['ld', 'ライン表示入力/小数出力', 'LineI/DecO']]),
-        opt('角度単位', get('angle'), set('angle'), [['deg', '度数法(D)', 'D'], ['rad', '弧度法(R)', 'R'], ['gra', 'グラード(G)', 'G']]),
-        { label: '表示桁数', right: () => (s.numFmt.type === 'norm' ? 'Norm' + s.numFmt.n : s.numFmt.type === 'fix' ? 'Fix' + s.numFmt.n : 'Sci' + (s.numFmt.n || 10)), sub: () => [
-          digitMenu('fix', '小数点以下桁数(Fix)'), digitMenu('sci', '有効桁数(Sci)'),
-          { label: '指数表示範囲(Norm)', sub: () => [1, 2].map((n) => ({ label: 'Norm ' + n, right: n === 1 ? '10⁻²>|x|,|x|≧10¹⁰' : '10⁻⁹>|x|,|x|≧10¹⁰', checked: () => s.numFmt.type === 'norm' && s.numFmt.n === n, action: () => { s.numFmt = { type: 'norm', n }; C.save(); C.popAll(); C.onSettingsChanged(); } })) },
+    const nf = () => s.numFmt;
+    const digitsMenu = (type, from, to) => new C.Menu({ items: Array.from({ length: to - from + 1 }, (_, i) => i + from).map((d) => ({ label: type === 'fix' ? '小数点以下桁数 ' + d : type === 'sci' ? '有効桁数 ' + d : '指数表示範囲 ' + d, radio: true, checked: () => nf().type === type && (nf().n || 10) === d, action: () => { s.numFmt = { type, n: d === 10 && type === 'sci' ? 0 : d }; C.save(); C.onSettingsChanged(); C.pop(); C.pop(); } })) });
+    C.menu([
+      { label: '計算・表示形式の設定', sub: () => [
+        { label: '入力/出力', sub: () => radios(() => s.io, (v) => { if ((v === 'mm' || v === 'md') !== (s.io === 'mm' || s.io === 'md')) G.fdef = { f: [], g: [] }; s.io = v; C.onIOChanged(); }, [['mm', '数学自然表示入出力'], ['md', '数学自然表示入力/小数出力'], ['ll', 'ライン表示入出力'], ['ld', 'ライン表示入力/小数出力']]) },
+        { label: '角度単位', sub: () => radios(() => s.angle, (v) => { s.angle = v; }, [['deg', '度数法(D)'], ['rad', '弧度法(R)'], ['gra', 'グラード(G)']]) },
+        { label: '表示桁数', sub: () => [
+          { label: '小数点以下桁数', radio: true, checked: () => nf().type === 'fix', sub: () => digitsMenu('fix', 0, 9) },
+          { label: '有効桁数', radio: true, checked: () => nf().type === 'sci', sub: () => digitsMenu('sci', 1, 10) },
+          { label: '指数表示範囲', radio: true, checked: () => nf().type === 'norm', sub: () => digitsMenu('norm', 1, 2) },
         ] },
-        opt('エンジニアリング記号', get('eng'), set('eng'), [[true, 'する'], [false, 'しない']]),
-        opt('分数表示', get('frac'), set('frac'), [['mixed', '帯分数(ab/c)', '帯分数'], ['improper', '仮分数(d/c)', '仮分数']]),
-        opt('複素数表示', get('complex'), set('complex'), [['rect', '直交座標形式(a+bi)', 'a+bi'], ['polar', '極座標形式(r∠θ)', 'r∠θ']]),
-        opt('小数点表示', get('decMark'), set('decMark'), [['.', 'ドット'], [',', 'カンマ']]),
-        opt('3桁区切り', get('sep'), set('sep'), [[true, 'する'], [false, 'しない']]),
+        { label: 'エンジニアリング記号表示', sub: () => radios(() => s.eng, (v) => { s.eng = v; }, [[true, 'する'], [false, 'しない']]) },
+        { label: '分数結果表示', sub: () => radios(() => s.frac, (v) => { s.frac = v; }, [['mixed', '帯分数'], ['improper', '仮分数']]) },
+        { label: '複素数結果表示', sub: () => radios(() => s.complex, (v) => { s.complex = v; }, [['rect', '直交座標形式(a+b𝑖)'], ['polar', '極座標形式(r∠θ)']]) },
+        { label: '小数点表示', sub: () => radios(() => s.decMark, (v) => { s.decMark = v; }, [['.', 'ドット'], [',', 'カンマ']]) },
+        { label: '3桁区切り表示', sub: () => radios(() => s.sep, (v) => { s.sep = v; }, [[true, 'する'], [false, 'しない']]) },
       ] },
       { label: 'システム設定', sub: () => [
-        { label: 'コントラスト', right: () => String(Math.round(s.contrast * 10)), action: () => openContrast() },
-        opt('オートパワーオフ', get('apo'), set('apo'), [[10, '10分'], [60, '60分']]),
-        opt('ライン表示フォント', get('font'), set('font'), [['normal', '標準フォント'], ['small', '小さいフォント']]),
-        opt('QRコード', get('qr'), set('qr'), [[3, 'バージョン3'], [11, 'バージョン11']]),
-        { label: '表示テーマ(画面外)', right: () => ({ auto: '自動', light: 'ライト', dark: 'ダーク' }[document.documentElement.dataset.theme || 'auto']), sub: () => [['auto', '自動'], ['light', 'ライト'], ['dark', 'ダーク']].map(([v, l]) => ({ label: l, action: () => { if (v === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v; try { localStorage.setItem('kscalc.theme', v); } catch (e) { /* */ } C.popAll(); } })) },
+        { label: 'コントラスト', action: () => openContrast() },
+        { label: 'オートパワーオフ', sub: () => radios(() => s.apo, (v) => { s.apo = v; resetApo(); }, [[10, '10分'], [60, '60分']]) },
+        { label: 'QRコード', sub: () => radios(() => s.qr, (v) => { s.qr = v; }, [[3, 'バージョン3'], [11, 'バージョン11']]) },
       ] },
-      { label: 'リセット', sub: () => [
-        { label: '設定とデータ', action: () => C.confirm('設定とデータ', '設定とデータを初期化しますか？', () => { resetSettings(); resetData(); done('設定とデータを初期化しました'); }) },
-        { label: '変数メモリー', action: () => C.confirm('変数メモリー', '変数メモリーをクリアしますか？', () => { for (const v in G.vars) G.vars[v] = C.E.Q(0); done('変数メモリーをクリアしました'); }) },
-        { label: 'すべてを初期化', action: () => C.confirm('すべてを初期化', 'すべてを初期化しますか？', () => { resetSettings(true); resetData(); for (const v in G.vars) G.vars[v] = C.E.Q(0); G.ans = C.E.Q(0); G.preAns = C.E.Q(0); G.fdef = { f: [], g: [] }; G.mats = {}; G.vecs = {}; done('初期化しました'); }) },
+      { label: 'リセット項目', sub: () => [
+        { label: 'セットアップ情報とデータ', sub: () => [{ label: '実行', action: () => { resetSettings(); resetData(); afterReset(); } }, { label: 'キャンセル', action: (m) => C.pop(m) }] },
+        { label: '変数メモリー', sub: () => [{ label: '実行', action: () => { for (const v of C.VARN) G.vars[v] = C.E.Q(0); G.ans = C.E.Q(0); G.preAns = C.E.Q(0); C.save(); C.popAll(); } }, { label: 'キャンセル', action: (m) => C.pop(m) }] },
+        { label: '初期化', sub: () => [{ label: '実行', action: () => { resetSettings(); resetData(); for (const v of C.VARN) G.vars[v] = C.E.Q(0); G.ans = C.E.Q(0); G.preAns = C.E.Q(0); G.fdef = { f: [], g: [] }; G.mats = {}; G.vecs = {}; afterReset(); } }, { label: 'キャンセル', action: (m) => C.pop(m) }] },
       ] },
-      { label: '使い方', action: () => { C.popAll(); document.getElementById('helpBtn').click(); } },
+      { label: 'はじめに', sub: () => { openGetStarted(); return null; } },
     ]);
   }
-  function done(msg) { C.save(); C.popAll(); C.switchApp(G.app.id); C.push(new C.Msg({ title: msg, hint: '[OK]' })); }
-  function resetSettings(all) {
-    const keep = all ? {} : { contrast: G.s.contrast, apo: G.s.apo };
+  function afterReset() { G.verify = false; C.save(); C.popAll(); for (const a of C.APPS) if (a.reset) a.reset(); openHome(); }
+  function resetSettings() {
+    const keep = { contrast: G.s.contrast, apo: G.s.apo };
     const d = JSON.parse(JSON.stringify(C.DEFAULTS)); for (const k in G.s) delete G.s[k]; Object.assign(G.s, d, keep);
   }
-  function resetData() { G.appState = {}; for (const a of C.APPS) if (a.reset) a.reset(); }
+  function resetData() { G.appState = {}; }
   function openContrast() {
     const ov = {
-      render() { const v = Math.round(G.s.contrast * 10); return '<div class="msg"><div class="t">コントラスト</div><div class="d">◀ ' + '■'.repeat(Math.max(1, v - 4)) + '□'.repeat(Math.max(0, 12 - v)) + ' ▶</div><div class="h">[◀][▶] 調整  [OK] 終了</div></div>'; },
+      noStatus: true,
+      render() {
+        const v = G.s.contrast; const pos = Math.round((v - 0.6) / 1.0 * 150);
+        return '<div style="position:absolute;left:12px;top:6px;width:168px;height:14px;border:1px solid currentColor;background:linear-gradient(90deg,#fff 0 25%,#999 25% 50%,#555 50% 75%,#111 75%)"></div>' +
+          '<div style="position:absolute;left:' + (12 + pos) + 'px;top:22px">' + C.IC.up + '</div>' +
+          '<div class="fj" style="position:absolute;left:12px;top:26px">淡</div><div class="fj" style="position:absolute;right:10px;top:26px">濃</div>' +
+          '<div class="fb" style="position:absolute;left:12px;top:46px">[◀]</div><div class="fb" style="position:absolute;right:8px;top:46px">[▶]</div>';
+      },
       key(k) { if (k === 'left') G.s.contrast = Math.max(0.6, +(G.s.contrast - 0.1).toFixed(1)); else if (k === 'right') G.s.contrast = Math.min(1.6, +(G.s.contrast + 0.1).toFixed(1)); else if (['ok', 'exe', 'back', 'ac'].includes(k)) { C.save(); C.pop(ov); } return true; },
     };
     C.push(ov);
   }
   C.onSettingsChanged = function () { if (G.app && G.app.onSettings) G.app.onSettings(); C.render(); };
   C.onIOChanged = function () { for (const a of C.APPS) if (a.onIO) a.onIO(); };
+  C.openHome = openHome;
 
   // ===== 描画 =====
   C.render = function () {
     const lcd = document.getElementById('lcd');
     if (!lcd) return;
     lcd.classList.toggle('off', !G.power);
+    document.getElementById('lcdwrap').classList.toggle('off', !G.power);
     document.documentElement.style.setProperty('--contrast', G.s.contrast);
-        if (!G.power) return;
+    if (!G.power) return;
     const top = C.top();
+    const cur = top || G.app;
     let body = '';
-    try { body = top ? top.render() : G.app.render(); } catch (e) { console.error(e); body = '<div class="msg">表示エラー</div>'; }
+    try { body = cur.render(); } catch (e) { console.error(e); body = ''; }
     document.getElementById('screen').innerHTML = body;
-    document.getElementById('status').innerHTML = statusHtml(top);
+    const noSt = !!(cur.noStatus || (cur.noStatusFn && cur.noStatusFn()));
+    lcd.classList.toggle('nost', noSt);
+    if (!noSt) document.getElementById('status').innerHTML = statusHtml(top);
     const sk = document.querySelector('.k.shift'); if (sk) sk.classList.toggle('on-shift', !!G.shift);
-    // カーソルを表示範囲内に
-    const cur = lcd.querySelector('.cur');
-    if (cur) {
-      let box = cur.closest('.input, .vl, .editbox');
+    // 入力欄のスクロール（カーソルを表示範囲内に）
+    const curEl = lcd.querySelector('.cur');
+    if (curEl) {
+      const box = curEl.closest('.in, .vl, .edit');
       if (box) {
-        const br = box.getBoundingClientRect(), cr = cur.getBoundingClientRect();
-        if (cr.right > br.right - 4) box.scrollLeft += cr.right - br.right + 12;
-        if (cr.left < br.left + 2) box.scrollLeft -= br.left - cr.left + 12;
-        if (box.classList.contains('input') && box.scrollHeight > box.clientHeight) { const off = cr.top - br.top; if (off > box.clientHeight - 20 || off < 0) box.scrollTop += off - box.clientHeight / 2; }
+        const sc = parseFloat(getComputedStyle(lcd).getPropertyValue('--lcd-s')) || 1;
+        const br = box.getBoundingClientRect(), cr = curEl.getBoundingClientRect();
+        const k = 1 / (sc * (parseFloat(document.getElementById('device').style.transform.replace(/[^0-9.]/g, '')) || 1));
+        if (cr.right > br.right - 2) box.scrollLeft += (cr.right - br.right) * k + 12;
+        if (cr.left < br.left) box.scrollLeft -= (br.left - cr.left) * k + 12;
       }
     }
   };
   function statusHtml(top) {
-    const s = G.s; const ind = [];
-    if (G.shift) ind.push('<span class="ind box">S</span>');
-    ind.push('<span class="ind box">' + { deg: 'D', rad: 'R', gra: 'G' }[s.angle] + '</span>');
-    if (s.numFmt.type === 'fix') ind.push('<span class="ind">FIX</span>');
-    if (s.numFmt.type === 'sci') ind.push('<span class="ind">SCI</span>');
-    if (s.eng) ind.push('<span class="ind">E</span>');
-    if (G.app && G.app.id === 'cplx') ind.push('<span class="ind">' + (s.complex === 'polar' ? '∠' : '<i>i</i>') + '</span>');
-    if (G.app && G.app.id === 'calc' && s.verify) ind.push('<span class="ind">VERIFY</span>');
-    ind.push('<span class="ind">' + (s.io === 'mm' || s.io === 'md' ? 'Math' : 'Line') + '</span>');
-    const appSt = !top && G.app && G.app.status ? G.app.status() : '';
-    ind.push('<span class="sp"></span>');
-    if (appSt) ind.push('<span class="ind">' + appSt + '</span>');
-    ind.push('<span class="ind">' + esc(top === HomeOv ? 'HOME' : G.app ? G.app.short || G.app.name : '') + '</span>');
-    return ind.join('');
+    const s = G.s, app = G.app;
+    const st = { shift: G.shift, math: s.io === 'mm' || s.io === 'md', angle: s.angle, fix: s.numFmt.type === 'fix', sci: s.numFmt.type === 'sci', eng: s.eng };
+    if (app && (app.id === 'cplx' || (app.id === 'eq' && app.isPoly && app.isPoly()))) st.cx = s.complex === 'polar' ? '∠' : 'i';
+    if (G.verify && app && app.verifiable) st.verify = true;
+    const ap = (!top || top.passStatus) && app && app.status ? app.status() : (top && top.status ? top.status() : null);
+    if (ap) { st.up = ap.up; st.down = ap.down; }
+    if (app && app.id === 'base') st.math = false;
+    return C.statusHtml(st);
   }
 
   // ===== キー処理 =====
@@ -264,7 +269,6 @@
     if (key === 'S-on') key = 'on';
     try {
       const top = C.top();
-      if (key === 'pgup' || key === 'pgdn') key = top instanceof C.Menu ? (key === 'pgup' ? 'left' : 'right') : (key === 'pgup' ? 'up' : 'down');
       if (key === 'home') { openHome(); C.render(); return; }
       if (key === 'settings' && !top) { openSettings(); C.render(); return; }
       if (top) {
@@ -273,7 +277,7 @@
       } else {
         const handled = G.app.key(key);
         if (!handled) {
-          if (key === 'tools') { const items = G.app.tools ? G.app.tools() : null; if (items) C.menu('ツール', items); }
+          if (key === 'tools') { const items = G.app.tools ? G.app.tools() : null; if (items && items.length) C.menu(items); }
           else if (key === 'catalog' && G.app.catalog) { const ed = C.activeEditor(); if (ed) C.openCatalog(G.app.catalog(), ed); }
           else if (key === 'back' && G.app.id !== 'calc') { /* 何もしない */ }
         }
